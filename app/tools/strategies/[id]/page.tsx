@@ -79,7 +79,7 @@ export default function DynamicStrategyPage() {
     setResult(null);
   };
 
-  const handleExecuteTrade = () => router.push('/operations/new');
+  const handleExecuteTrade = () => router.push(`/operations/new?strategy=${encodeURIComponent(strategy.name)}`);
 
   return (
     <div className="space-y-8">

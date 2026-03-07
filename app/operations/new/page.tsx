@@ -39,6 +39,7 @@ function NewOperationForm() {
   const [loading, setLoading] = useState(false);
   const [wallets, setWallets] = useState<any[]>([]);
   const [triggers, setTriggers] = useState<any[]>([]);
+  const [userStrategies, setUserStrategies] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     wallet_id: '',
@@ -80,6 +81,9 @@ function NewOperationForm() {
       const { data: triggerData } = await supabase.from('triggers').select('*').eq('user_id', user.id);
       setTriggers(triggerData || []);
 
+      const { data: strategyData } = await supabase.from('strategies').select('*').eq('user_id', user.id);
+      setUserStrategies(strategyData || []);
+
       if (isEditMode && tradeId) {
         const { data: tradeData } = await supabase.from('trades').select('*').eq('id', tradeId).single();
         if (tradeData) {
@@ -114,11 +118,15 @@ function NewOperationForm() {
           });
         }
       } else if (walletData && walletData.length > 0) {
-        setFormData(prev => ({ ...prev, wallet_id: walletData[0].id }));
+        setFormData(prev => ({ 
+          ...prev, 
+          wallet_id: walletData[0].id,
+          strategy: searchParams.get('strategy') || ''
+        }));
       }
     };
     fetchData();
-  }, [supabase, isEditMode, tradeId]);
+  }, [supabase, isEditMode, tradeId, searchParams]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,6 +455,31 @@ function NewOperationForm() {
                   <option value="Asia">Asia</option>
                   <option value="London">London</option>
                   <option value="New York">New York</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Estratégia</label>
+                <select 
+                  value={formData.strategy}
+                  onChange={(e) => setFormData({...formData, strategy: e.target.value})}
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none"
+                >
+                  <option value="">Selecione uma estratégia...</option>
+                  <optgroup label="Estratégias Padrão">
+                    <option value="LIQUIDEZ">Liquidez</option>
+                    <option value="ORDER BLOCK">Order Block</option>
+                    <option value="SMC">ChoCH & SMC</option>
+                    <option value="WYCKOFF">Wyckoff</option>
+                    <option value="ELLIOTT">Elliott</option>
+                  </optgroup>
+                  {userStrategies.length > 0 && (
+                    <optgroup label="Minhas Estratégias">
+                      {userStrategies.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

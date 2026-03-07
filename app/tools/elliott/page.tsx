@@ -12,6 +12,7 @@ import {
   Info,
   Activity
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -62,10 +63,21 @@ const steps = [
 ];
 
 export default function ElliottStrategyPage() {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const resetSetup = () => {
+    setAnswers({});
+    setActiveStep(1);
+    setResult(null);
+  };
+
+  const handleExecuteTrade = () => {
+    router.push('/operations/new?strategy=ELLIOTT');
+  };
 
   const totalQuestions = steps.reduce((acc, step) => acc + step.questions.length, 0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
@@ -117,6 +129,7 @@ export default function ElliottStrategyPage() {
                 <span className="text-3xl font-display font-bold text-white">{reliability}%</span>
               </div>
             </div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{answeredCount} de {totalQuestions} itens validados</p>
           </div>
 
           <div className="space-y-2">
@@ -208,6 +221,47 @@ export default function ElliottStrategyPage() {
               </div>
             </motion.div>
           </AnimatePresence>
+
+          {result && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#050A15] p-6 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">QUALIDADE DO SETUP</p>
+                  <p className={cn(
+                    "text-2xl font-bold",
+                    result.quality === 'ALTA' ? "text-emerald-500" : result.quality === 'MÉDIA' ? "text-amber-500" : "text-red-500"
+                  )}>{result.quality}</p>
+                </div>
+                <div className="bg-[#050A15] p-6 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">SUGESTÃO</p>
+                  <p className="text-lg font-bold text-white uppercase leading-tight">{result.suggestion}</p>
+                </div>
+                <div className="bg-[#050A15] p-6 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">PONTUAÇÃO</p>
+                  <p className="text-2xl font-bold text-blue-500">{result.score}/100</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleExecuteTrade}
+                  className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  EXECUTAR TRADE (REGISTRAR)
+                </button>
+                <button 
+                  onClick={resetSetup}
+                  className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all"
+                >
+                  DESCARTAR SETUP
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

@@ -89,7 +89,7 @@ export default function LiquidityStrategyPage() {
   };
 
   const handleExecuteTrade = () => {
-    router.push('/operations/new');
+    router.push('/operations/new?strategy=LIQUIDEZ');
   };
 
   const totalQuestions = steps.reduce((acc, step) => acc + step.questions.length, 0);

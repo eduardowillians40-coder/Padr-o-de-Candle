@@ -12,6 +12,7 @@ import {
   Info,
   Layers
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -62,10 +63,21 @@ const steps = [
 ];
 
 export default function SMCStrategyPage() {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const resetSetup = () => {
+    setAnswers({});
+    setActiveStep(1);
+    setResult(null);
+  };
+
+  const handleExecuteTrade = () => {
+    router.push('/operations/new?strategy=SMC');
+  };
 
   const totalQuestions = steps.reduce((acc, step) => acc + step.questions.length, 0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
@@ -232,6 +244,21 @@ export default function SMCStrategyPage() {
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">PONTUAÇÃO</p>
                   <p className="text-2xl font-bold text-purple-500">{result.score}/100</p>
                 </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleExecuteTrade}
+                  className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  EXECUTAR TRADE (REGISTRAR)
+                </button>
+                <button 
+                  onClick={resetSetup}
+                  className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all"
+                >
+                  DESCARTAR SETUP
+                </button>
               </div>
             </motion.div>
           )}

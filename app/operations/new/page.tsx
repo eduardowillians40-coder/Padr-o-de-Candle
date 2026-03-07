@@ -127,6 +127,28 @@ function NewOperationForm() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Resolve trigger_id if it's a standard trigger name
+    let finalTriggerId = formData.trigger_id;
+    if (finalTriggerId && STANDARD_TRIGGERS.includes(finalTriggerId)) {
+      const existing = triggers.find(t => t.name === finalTriggerId);
+      if (existing) {
+        finalTriggerId = existing.id;
+      } else {
+        // Create the standard trigger in the DB for this user
+        const { data: newT, error: tError } = await supabase
+          .from('triggers')
+          .insert({ user_id: user.id, name: finalTriggerId })
+          .select()
+          .single();
+        
+        if (!tError && newT) {
+          finalTriggerId = newT.id;
+        } else {
+          finalTriggerId = ''; // Fallback to null/empty if creation fails
+        }
+      }
+    }
+
     const entry = parseFloat(formData.entry_price);
     const exit = parseFloat(formData.exit_price);
     const qty = parseFloat(formData.quantity);
@@ -148,7 +170,7 @@ function NewOperationForm() {
       quantity: qty,
       status: formData.status,
       strategy: formData.strategy,
-      trigger_id: formData.trigger_id || null,
+      trigger_id: finalTriggerId || null,
       mental_state: formData.mental_state,
       notes: formData.session !== 'None' ? `[Sessão: ${formData.session}]\n${formData.notes}` : formData.notes,
       fees: fees,

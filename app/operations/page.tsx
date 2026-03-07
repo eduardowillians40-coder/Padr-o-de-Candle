@@ -125,7 +125,12 @@ export default function OperationsPage() {
     const matchesWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
     const matchesAsset = filterAsset === '' || trade.asset.toLowerCase().includes(filterAsset.toLowerCase());
     const matchesType = filterType === 'all' || (filterType === 'LONG' ? trade.type === 'BUY' : trade.type === 'SELL');
-    const matchesTrigger = filterTrigger === 'all' || trade.trigger_id === filterTrigger;
+    
+    // Improved trigger matching
+    const tradeTriggerName = triggers.find(t => t.id === trade.trigger_id)?.name;
+    const matchesTrigger = filterTrigger === 'all' || 
+                          trade.trigger_id === filterTrigger || 
+                          tradeTriggerName === filterTrigger;
     
     // Lógica de período
     const tradeDate = new Date(trade.created_at);

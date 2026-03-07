@@ -27,7 +27,13 @@ export default function WalletsPage() {
   const [newWallet, setNewWallet] = useState({
     name: '',
     initial_balance: '',
-    meta_value: ''
+    meta_value: '',
+    risk_settings: {
+      risk_per_trade_percent: '',
+      max_trades_per_day: '',
+      max_consecutive_losses: '',
+      max_losses_per_week: ''
+    }
   });
 
   const [refresh, setRefresh] = useState(0);
@@ -99,18 +105,32 @@ export default function WalletsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('wallets')
       .insert({
         user_id: user.id,
         name: newWallet.name,
         initial_balance: parseFloat(newWallet.initial_balance),
         meta_value: parseFloat(newWallet.meta_value) || 0
-      });
+      })
+      .select();
 
-    if (!error) {
+    if (!error && data) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`risk_settings_${data[0].id}`, JSON.stringify(newWallet.risk_settings));
+      }
       setIsModalOpen(false);
-      setNewWallet({ name: '', initial_balance: '', meta_value: '' });
+      setNewWallet({ 
+        name: '', 
+        initial_balance: '', 
+        meta_value: '',
+        risk_settings: {
+          risk_per_trade_percent: '',
+          max_trades_per_day: '',
+          max_consecutive_losses: '',
+          max_losses_per_week: ''
+        }
+      });
       setRefresh(prev => prev + 1);
     }
   };
@@ -135,7 +155,21 @@ export default function WalletsPage() {
   };
 
   const handleEditWallet = (wallet: any) => {
-    setEditingWallet(wallet);
+    let risk_settings = {
+      risk_per_trade_percent: '',
+      max_trades_per_day: '',
+      max_consecutive_losses: '',
+      max_losses_per_week: ''
+    };
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`risk_settings_${wallet.id}`);
+      if (saved) {
+        try {
+          risk_settings = { ...risk_settings, ...JSON.parse(saved) };
+        } catch (e) {}
+      }
+    }
+    setEditingWallet({ ...wallet, risk_settings });
     setIsEditModalOpen(true);
   };
 
@@ -153,6 +187,9 @@ export default function WalletsPage() {
       .eq('id', editingWallet.id);
 
     if (!error) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`risk_settings_${editingWallet.id}`, JSON.stringify(editingWallet.risk_settings));
+      }
       setIsEditModalOpen(false);
       setEditingWallet(null);
       setRefresh(prev => prev + 1);
@@ -331,6 +368,65 @@ export default function WalletsPage() {
               placeholder="0.00"
               className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
+          </div>
+          
+          <div className="pt-4 border-t border-slate-800">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Gestão de Risco (Opcional)</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">% Capital por Op.</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={isEditModalOpen ? editingWallet?.risk_settings?.risk_per_trade_percent : newWallet.risk_settings.risk_per_trade_percent}
+                  onChange={(e) => isEditModalOpen 
+                    ? setEditingWallet({...editingWallet, risk_settings: {...editingWallet.risk_settings, risk_per_trade_percent: e.target.value}})
+                    : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, risk_per_trade_percent: e.target.value}})
+                  }
+                  placeholder="Ex: 1.5"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trades por Dia</label>
+                <input 
+                  type="number" 
+                  value={isEditModalOpen ? editingWallet?.risk_settings?.max_trades_per_day : newWallet.risk_settings.max_trades_per_day}
+                  onChange={(e) => isEditModalOpen 
+                    ? setEditingWallet({...editingWallet, risk_settings: {...editingWallet.risk_settings, max_trades_per_day: e.target.value}})
+                    : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, max_trades_per_day: e.target.value}})
+                  }
+                  placeholder="Ex: 3"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Loss Seguidos p/ Parar</label>
+                <input 
+                  type="number" 
+                  value={isEditModalOpen ? editingWallet?.risk_settings?.max_consecutive_losses : newWallet.risk_settings.max_consecutive_losses}
+                  onChange={(e) => isEditModalOpen 
+                    ? setEditingWallet({...editingWallet, risk_settings: {...editingWallet.risk_settings, max_consecutive_losses: e.target.value}})
+                    : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, max_consecutive_losses: e.target.value}})
+                  }
+                  placeholder="Ex: 2"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Loss Semana p/ Parar</label>
+                <input 
+                  type="number" 
+                  value={isEditModalOpen ? editingWallet?.risk_settings?.max_losses_per_week : newWallet.risk_settings.max_losses_per_week}
+                  onChange={(e) => isEditModalOpen 
+                    ? setEditingWallet({...editingWallet, risk_settings: {...editingWallet.risk_settings, max_losses_per_week: e.target.value}})
+                    : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, max_losses_per_week: e.target.value}})
+                  }
+                  placeholder="Ex: 5"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+            </div>
           </div>
           <button 
             type="submit"

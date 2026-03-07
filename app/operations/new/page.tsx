@@ -40,6 +40,8 @@ function NewOperationForm() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [triggers, setTriggers] = useState<any[]>([]);
   const [userStrategies, setUserStrategies] = useState<any[]>([]);
+  const [riskSettings, setRiskSettings] = useState<any>(null);
+  const [walletStats, setWalletStats] = useState<any>({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0 });
   
   const [formData, setFormData] = useState({
     wallet_id: '',
@@ -128,6 +130,68 @@ function NewOperationForm() {
     fetchData();
   }, [supabase, isEditMode, tradeId, searchParams]);
 
+  useEffect(() => {
+    if (formData.wallet_id) {
+      const fetchStats = async () => {
+        if (typeof window !== 'undefined') {
+          const saved = localStorage.getItem(`risk_settings_${formData.wallet_id}`);
+          if (saved) {
+            try {
+              setRiskSettings(JSON.parse(saved));
+            } catch (e) {
+              setRiskSettings(null);
+            }
+          } else {
+            setRiskSettings(null);
+          }
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        const startOfWeekIso = startOfWeek.toISOString();
+
+        const { data: trades } = await supabase
+          .from('trades')
+          .select('status, created_at')
+          .eq('wallet_id', formData.wallet_id)
+          .gte('created_at', startOfWeekIso)
+          .order('created_at', { ascending: false });
+
+        if (trades) {
+          const todayTrades = trades.filter(t => t.created_at >= startOfDay);
+          const tradesTodayCount = todayTrades.length;
+          
+          let consecutiveLosses = 0;
+          for (const t of trades) {
+            if (t.status === 'LOSS') consecutiveLosses++;
+            else break;
+          }
+
+          const weeklyLosses = trades.filter(t => t.status === 'LOSS').length;
+
+          setWalletStats({
+            tradesToday: tradesTodayCount,
+            consecutiveLosses,
+            weeklyLosses
+          });
+        }
+      };
+      fetchStats();
+    } else {
+      Promise.resolve().then(() => {
+        setRiskSettings(null);
+        setWalletStats({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0 });
+      });
+    }
+  }, [formData.wallet_id, supabase]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -180,7 +244,13 @@ function NewOperationForm() {
       strategy: formData.strategy,
       trigger_id: finalTriggerId || null,
       mental_state: formData.mental_state,
-      notes: formData.session !== 'None' ? `[Sessão: ${formData.session}]\n${formData.notes}` : formData.notes,
+      notes: (() => {
+        let n = formData.session !== 'None' ? `[Sessão: ${formData.session}]\n${formData.notes}` : formData.notes;
+        if (riskSettings && (riskSettings.risk_per_trade_percent || riskSettings.max_trades_per_day || riskSettings.max_consecutive_losses || riskSettings.max_losses_per_week)) {
+          n += `\n\n[Gestão de Risco: ${riskSettings.risk_per_trade_percent ? riskSettings.risk_per_trade_percent + '%/op' : ''} ${riskSettings.max_trades_per_day ? '| Max ' + riskSettings.max_trades_per_day + '/dia' : ''} ${riskSettings.max_consecutive_losses ? '| Loss ' + riskSettings.max_consecutive_losses + ' seg' : ''} ${riskSettings.max_losses_per_week ? '| Loss ' + riskSettings.max_losses_per_week + '/sem' : ''}]`;
+        }
+        return n;
+      })(),
       fees: fees,
       gross_profit,
       net_profit,
@@ -235,7 +305,7 @@ function NewOperationForm() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
@@ -259,8 +329,8 @@ function NewOperationForm() {
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
+      <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="space-y-6 md:col-span-1">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Target className="w-4 h-4" />
@@ -597,6 +667,76 @@ function NewOperationForm() {
             >
               {loading ? 'SALVANDO...' : (isEditMode ? 'ATUALIZAR OPERAÇÃO' : 'FINALIZAR LANÇAMENTO')}
             </button>
+          </div>
+        </div>
+
+        <div className="space-y-6 md:col-span-1">
+          <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6 sticky top-8">
+            <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
+              <Wallet className="w-4 h-4" />
+              Gestão de Risco
+            </h3>
+            
+            {!formData.wallet_id ? (
+              <div className="text-center py-8 text-slate-500 text-xs font-medium uppercase tracking-widest">
+                Selecione uma carteira para ver a gestão de risco.
+              </div>
+            ) : !riskSettings || (!riskSettings.risk_per_trade_percent && !riskSettings.max_trades_per_day && !riskSettings.max_consecutive_losses && !riskSettings.max_losses_per_week) ? (
+              <div className="text-center py-8 text-slate-500 text-xs font-medium uppercase tracking-widest">
+                Nenhuma regra de gestão de risco definida para esta carteira.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {riskSettings.risk_per_trade_percent && (
+                  <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco por Op.</span>
+                    <span className="text-sm font-bold text-white">{riskSettings.risk_per_trade_percent}%</span>
+                  </div>
+                )}
+                
+                {riskSettings.max_trades_per_day && (
+                  <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trades Hoje</span>
+                      <span className={`text-sm font-bold ${walletStats.tradesToday >= Number(riskSettings.max_trades_per_day) ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {walletStats.tradesToday} / {riskSettings.max_trades_per_day}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div className={`h-full ${walletStats.tradesToday >= Number(riskSettings.max_trades_per_day) ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min((walletStats.tradesToday / Number(riskSettings.max_trades_per_day)) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                {riskSettings.max_consecutive_losses && (
+                  <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Loss Seguidos</span>
+                      <span className={`text-sm font-bold ${walletStats.consecutiveLosses >= Number(riskSettings.max_consecutive_losses) ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {walletStats.consecutiveLosses} / {riskSettings.max_consecutive_losses}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div className={`h-full ${walletStats.consecutiveLosses >= Number(riskSettings.max_consecutive_losses) ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min((walletStats.consecutiveLosses / Number(riskSettings.max_consecutive_losses)) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                {riskSettings.max_losses_per_week && (
+                  <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Loss na Semana</span>
+                      <span className={`text-sm font-bold ${walletStats.weeklyLosses >= Number(riskSettings.max_losses_per_week) ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {walletStats.weeklyLosses} / {riskSettings.max_losses_per_week}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div className={`h-full ${walletStats.weeklyLosses >= Number(riskSettings.max_losses_per_week) ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min((walletStats.weeklyLosses / Number(riskSettings.max_losses_per_week)) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </form>

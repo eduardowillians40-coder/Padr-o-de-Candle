@@ -14,9 +14,12 @@ import {
   Save
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useUserPreferences } from '@/app/context/UserPreferencesContext';
+import { formatCurrency } from '@/lib/formatCurrency';
 import Modal from '@/components/Modal';
 
 export default function WalletsPage() {
+  const { preferences } = useUserPreferences();
   const supabase = createClient();
   const [wallets, setWallets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +38,56 @@ export default function WalletsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      const { data: walletsData } = await supabase
         .from('wallets')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+        
+      const { data: tradesData } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id);
+
+      const walletsWithStats = (walletsData || []).map((wallet: any) => {
+        const walletTrades = (tradesData || []).filter((t: any) => t.wallet_id === wallet.id);
+        const totalTrades = walletTrades.length;
+        const wins = walletTrades.filter((t: any) => t.status === 'WIN').length;
+        const losses = walletTrades.filter((t: any) => t.status === 'LOSS').length;
+        const be = walletTrades.filter((t: any) => t.status === 'BE').length;
+        
+        const netProfit = walletTrades.reduce((acc: number, t: any) => acc + (Number(t.net_profit) || 0), 0);
+        const fees = walletTrades.reduce((acc: number, t: any) => acc + (Number(t.fees) || 0), 0);
+        const grossProfit = walletTrades.reduce((acc: number, t: any) => acc + (Number(t.gross_profit) || 0), 0);
+        
+        const initialBalance = Number(wallet.initial_balance) || 0;
+        const netBalance = initialBalance + netProfit;
+        const grossBalance = initialBalance + grossProfit;
+        
+        const returnPct = initialBalance > 0 ? (netProfit / initialBalance) * 100 : 0;
+        
+        const metaValue = Number(wallet.meta_value) || 0;
+        const progressPct = metaValue > 0 ? (netBalance / metaValue) * 100 : 0;
+
+        return {
+          ...wallet,
+          stats: {
+            totalTrades,
+            wins,
+            losses,
+            be,
+            netProfit,
+            grossProfit,
+            fees,
+            netBalance,
+            grossBalance,
+            returnPct,
+            progressPct
+          }
+        };
+      });
       
-      setWallets(data || []);
+      setWallets(walletsWithStats);
       setLoading(false);
     };
 
@@ -69,10 +115,50 @@ export default function WalletsPage() {
     }
   };
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<any>(null);
+
   const handleDeleteWallet = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta carteira?')) return;
-    const { error } = await supabase.from('wallets').delete().eq('id', id);
-    if (!error) setRefresh(prev => prev + 1);
+    console.log('Attempting direct deletion for ID:', id);
+    const { data, error } = await supabase
+      .from('wallets')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Erro ao excluir carteira:', error);
+      alert(`Erro ao excluir carteira: ${error.message}`);
+    } else {
+      console.log('Successfully deleted wallet:', id, 'Data:', data);
+      setRefresh(prev => prev + 1);
+    }
+  };
+
+  const handleEditWallet = (wallet: any) => {
+    setEditingWallet(wallet);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateWallet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWallet) return;
+
+    const { error } = await supabase
+      .from('wallets')
+      .update({
+        name: editingWallet.name,
+        initial_balance: parseFloat(editingWallet.initial_balance),
+        meta_value: parseFloat(editingWallet.meta_value) || 0
+      })
+      .eq('id', editingWallet.id);
+
+    if (!error) {
+      setIsEditModalOpen(false);
+      setEditingWallet(null);
+      setRefresh(prev => prev + 1);
+    } else {
+      alert('Erro ao atualizar carteira: ' + error.message);
+    }
   };
 
   if (loading) {
@@ -117,12 +203,12 @@ export default function WalletsPage() {
                 <p className="text-xs text-slate-500 font-medium mt-1">{new Date(wallet.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
               <div className="flex gap-2">
-                <button className="p-2 text-slate-500 hover:text-blue-500 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                <button onClick={() => handleEditWallet(wallet)} className="p-2 text-slate-500 hover:text-blue-500 transition-colors"><Edit2 className="w-4 h-4" /></button>
                 <button 
-                  onClick={() => handleDeleteWallet(wallet.id)}
+                  onClick={() => { console.log('Delete clicked for wallet:', wallet.id); handleDeleteWallet(wallet.id); }}
                   className="p-2 text-slate-500 hover:text-red-500 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 pointer-events-none" />
                 </button>
               </div>
             </div>
@@ -132,22 +218,65 @@ export default function WalletsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    {wallet.meta_value > 0 ? Math.round((wallet.initial_balance / wallet.meta_value) * 100) : 0}% para a meta
+                    {wallet.stats.progressPct.toFixed(1)}% para a meta
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500" style={{ width: `${wallet.meta_value > 0 ? (wallet.initial_balance / wallet.meta_value) * 100 : 0}%` }} />
+                  <div className="h-full bg-blue-500" style={{ width: `${Math.min(wallet.stats.progressPct, 100)}%` }} />
                 </div>
               </div>
 
-              <div className="bg-[#050A15] rounded-xl p-4 border border-slate-800/50">
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Saldo Inicial</p>
-                <h4 className="text-2xl font-display font-bold text-emerald-500">R$ {wallet.initial_balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h4>
+              <div className="bg-[#050A15] rounded-xl p-4 border border-slate-800/50 space-y-3">
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Saldo Líquido (após taxas)</p>
+                  <h4 className="text-2xl font-display font-bold text-emerald-500">
+                    {formatCurrency(wallet.stats.netBalance, preferences.currency)}
+                  </h4>
+                </div>
+                <div className="flex justify-between items-center text-xs font-medium">
+                  <span className="text-slate-400">Saldo Bruto: {formatCurrency(wallet.stats.grossBalance, preferences.currency)}</span>
+                  <span className="text-slate-400">Taxas: <span className="text-red-500">{formatCurrency(wallet.stats.fees, preferences.currency)}</span></span>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-slate-800 text-[10px] font-bold">
+              <div className="flex justify-between items-center text-sm">
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Saldo Inicial</p>
+                  <p className="font-bold text-white">{formatCurrency(wallet.initial_balance, preferences.currency)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Retorno</p>
+                  <p className={`font-bold ${wallet.stats.returnPct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {wallet.stats.returnPct > 0 ? '+' : ''}{wallet.stats.returnPct.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800/50">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-3">Estatísticas de Operações</p>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Total</p>
+                    <p className="font-bold text-white">{wallet.stats.totalTrades}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Win</p>
+                    <p className="font-bold text-emerald-500">{wallet.stats.wins}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Loss</p>
+                    <p className="font-bold text-red-500">{wallet.stats.losses}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">BE</p>
+                    <p className="font-bold text-blue-500">{wallet.stats.be}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 text-[10px] font-bold">
                 <span className="text-slate-500 uppercase">Meta</span>
-                <span className="text-white">R$ {wallet.meta_value.toLocaleString('pt-BR')}</span>
+                <span className="text-blue-500">{formatCurrency(wallet.meta_value, preferences.currency)}</span>
               </div>
             </div>
           </motion.div>
@@ -155,41 +284,50 @@ export default function WalletsPage() {
       </div>
 
       <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title="Nova Carteira"
+        isOpen={isModalOpen || isEditModalOpen} 
+        onClose={() => { setIsModalOpen(false); setIsEditModalOpen(false); setEditingWallet(null); }}
+        title={isEditModalOpen ? "Editar Carteira" : "Nova Carteira"}
       >
-        <form onSubmit={handleCreateWallet} className="space-y-4">
+        <form onSubmit={isEditModalOpen ? handleUpdateWallet : handleCreateWallet} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nome da Carteira</label>
             <input 
               required
               type="text" 
-              value={newWallet.name}
-              onChange={(e) => setNewWallet({...newWallet, name: e.target.value})}
+              value={isEditModalOpen ? editingWallet?.name : newWallet.name}
+              onChange={(e) => isEditModalOpen 
+                ? setEditingWallet({...editingWallet, name: e.target.value})
+                : setNewWallet({...newWallet, name: e.target.value})
+              }
               placeholder="Ex: B3, Forex, Crypto"
               className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Saldo Inicial (R$)</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Saldo Inicial ({preferences.currency})</label>
             <input 
               required
               type="number" 
               step="any"
-              value={newWallet.initial_balance}
-              onChange={(e) => setNewWallet({...newWallet, initial_balance: e.target.value})}
+              value={isEditModalOpen ? editingWallet?.initial_balance : newWallet.initial_balance}
+              onChange={(e) => isEditModalOpen 
+                ? setEditingWallet({...editingWallet, initial_balance: e.target.value})
+                : setNewWallet({...newWallet, initial_balance: e.target.value})
+              }
               placeholder="0.00"
               className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Meta de Saldo (R$)</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Meta de Saldo ({preferences.currency})</label>
             <input 
               type="number" 
               step="any"
-              value={newWallet.meta_value}
-              onChange={(e) => setNewWallet({...newWallet, meta_value: e.target.value})}
+              value={isEditModalOpen ? editingWallet?.meta_value : newWallet.meta_value}
+              onChange={(e) => isEditModalOpen 
+                ? setEditingWallet({...editingWallet, meta_value: e.target.value})
+                : setNewWallet({...newWallet, meta_value: e.target.value})
+              }
               placeholder="0.00"
               className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
@@ -199,7 +337,7 @@ export default function WalletsPage() {
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all mt-4"
           >
             <Save className="w-4 h-4" />
-            CRIAR CARTEIRA
+            {isEditModalOpen ? "ATUALIZAR CARTEIRA" : "CRIAR CARTEIRA"}
           </button>
         </form>
       </Modal>

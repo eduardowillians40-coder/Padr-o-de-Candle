@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { 
   Plus, 
@@ -24,51 +25,123 @@ import {
   Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useUserPreferences } from '@/app/context/UserPreferencesContext';
+import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
+
+const STANDARD_TRIGGERS = [
+  'Rompimento de Topo/Fundo',
+  'Pullback na Média',
+  'Cruzamento de Médias',
+  'Suporte/Resistência',
+  'Volume Climático'
+];
 
 export default function OperationsPage() {
+  const { preferences } = useUserPreferences();
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const walletId = searchParams.get('wallet');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [trades, setTrades] = useState<any[]>([]);
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [triggers, setTriggers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filtros
+  const [filterWallet, setFilterWallet] = useState('all');
+  const [filterAsset, setFilterAsset] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterTrigger, setFilterTrigger] = useState('all');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
 
   const [refresh, setRefresh] = useState(0);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta operação?')) return;
+    
+    const { error } = await supabase
+      .from('trades')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setRefresh(prev => prev + 1);
+    } else {
+      console.error('Erro ao deletar operação:', error);
+      alert('Erro ao deletar operação: ' + error.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchTrades = async () => {
+    const fetchData = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      // Buscar carteiras
+      const { data: walletsData } = await supabase
+        .from('wallets')
+        .select('id, name')
+        .eq('user_id', user.id);
+      setWallets(walletsData || []);
+
+      // Buscar gatilhos
+      const { data: triggersData } = await supabase
+        .from('triggers')
+        .select('id, name')
+        .eq('user_id', user.id);
+      setTriggers(triggersData || []);
+
+      // Buscar operações
+      let query = supabase
         .from('trades')
         .select('*, wallets(name)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
+        
+      if (walletId) {
+        query = query.eq('wallet_id', walletId);
+      }
+
+      const { data } = await query;
       setTrades(data || []);
       setLoading(false);
     };
 
-    fetchTrades();
-  }, [supabase, refresh]);
+    fetchData();
+  }, [supabase, refresh, walletId]);
+
+  // Lógica de filtragem robusta
+  const filteredTrades = trades.filter(trade => {
+    const matchesWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
+    const matchesAsset = filterAsset === '' || trade.asset.toLowerCase().includes(filterAsset.toLowerCase());
+    const matchesType = filterType === 'all' || (filterType === 'LONG' ? trade.type === 'BUY' : trade.type === 'SELL');
+    const matchesTrigger = filterTrigger === 'all' || trade.trigger_id === filterTrigger;
+    
+    // Lógica de período
+    const tradeDate = new Date(trade.created_at);
+    const matchesPeriod = (!filterStartDate || tradeDate >= new Date(filterStartDate)) &&
+                          (!filterEndDate || tradeDate <= new Date(filterEndDate));
+
+    return matchesWallet && matchesAsset && matchesType && matchesTrigger && matchesPeriod;
+  });
 
   const stats = {
-    total: trades.length,
-    win: trades.filter(t => t.status === 'WIN').length,
-    loss: trades.filter(t => t.status === 'LOSS').length,
-    be: trades.filter(t => t.status === 'BE').length,
-    netProfit: trades.reduce((acc, t) => acc + (t.net_profit || 0), 0),
-    fees: trades.reduce((acc, t) => acc + (t.fees || 0), 0)
+    total: filteredTrades.length,
+    win: filteredTrades.filter(t => t.status === 'WIN').length,
+    loss: filteredTrades.filter(t => t.status === 'LOSS').length,
+    be: filteredTrades.filter(t => t.status === 'BE').length,
+    netProfit: filteredTrades.reduce((acc, t) => acc + (t.net_profit || 0), 0),
+    fees: filteredTrades.reduce((acc, t) => acc + (t.fees || 0), 0)
   };
 
   const days = eachDayOfInterval({
@@ -85,28 +158,60 @@ export default function OperationsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Histórico de Operações</h1>
-          <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Acompanhe e analise cada detalhe das suas entradas.</p>
+    <div className="space-y-8 p-6">
+      {/* Header and Filters Section */}
+      <div className="flex flex-col gap-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Histórico de Operações</h1>
+            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Acompanhe e analise cada detalhe das suas entradas.</p>
+          </div>
+          
+          <div className="flex bg-[#0D1425] p-1 rounded-xl border border-slate-800">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <List className="w-4 h-4" /> LISTA
+            </button>
+            <button 
+              onClick={() => setViewMode('calendar')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <CalendarIcon className="w-4 h-4" /> CALENDÁRIO
+            </button>
+          </div>
         </div>
-        <div className="flex bg-[#0D1425] p-1 rounded-xl border border-slate-800">
-          <button 
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-          >
-            <List className="w-4 h-4" /> LISTA
-          </button>
-          <button 
-            onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-          >
-            <CalendarIcon className="w-4 h-4" /> CALENDÁRIO
-          </button>
+
+        {/* Filtros */}
+        <div className="flex gap-4 bg-[#0D1425] p-4 rounded-xl border border-slate-800 w-full">
+          <select value={filterWallet} onChange={(e) => setFilterWallet(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+            <option value="all">Todas as carteiras</option>
+            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+          <input type="text" placeholder="Filtrar por ativo..." value={filterAsset} onChange={(e) => setFilterAsset(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+            <option value="all">Todos (Long/Short)</option>
+            <option value="LONG">Long</option>
+            <option value="SHORT">Short</option>
+          </select>
+          <select value={filterTrigger} onChange={(e) => setFilterTrigger(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+            <option value="all">Todos os Gatilhos</option>
+            <optgroup label="Gatilhos Padrão">
+              {STANDARD_TRIGGERS.map(t => <option key={t} value={t}>{t}</option>)}
+            </optgroup>
+            {triggers.length > 0 && (
+              <optgroup label="Meus Gatilhos">
+                {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </optgroup>
+            )}
+          </select>
+          <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
+          <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
         </div>
       </div>
 
+      {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6">
           <div className="flex justify-between items-start mb-4">
@@ -127,7 +232,7 @@ export default function OperationsPage() {
             <TrendingUp className="w-4 h-4 text-emerald-500" />
           </div>
           <p className={`text-3xl font-display font-bold ${stats.netProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            R$ {stats.netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {formatCurrency(stats.netProfit, preferences.currency)}
           </p>
           <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">Acumulado do período</p>
         </div>
@@ -148,11 +253,13 @@ export default function OperationsPage() {
             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">TAXAS PAGAS</h3>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-3xl font-display font-bold text-amber-500">R$ {stats.fees.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-3xl font-display font-bold text-amber-500">{formatCurrency(stats.fees, preferences.currency)}</p>
         </div>
       </div>
 
-      <div className="flex justify-end">
+      {/* History Section */}
+      <div className="flex justify-between items-center pt-8">
+        <h2 className="text-xl font-bold text-white uppercase tracking-tight">Histórico de Operações</h2>
         <Link 
           href="/operations/new"
           className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-blue-600/20"
@@ -170,68 +277,72 @@ export default function OperationsPage() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-[#0D1425] border border-slate-800 rounded-2xl overflow-hidden"
           >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#050A15]/50 border-b border-slate-800">
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Data</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ativo</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tipo</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Resultado</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Carteira</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {trades.map((trade) => (
-                    <tr key={trade.id} className="hover:bg-slate-800/30 transition-colors group">
-                      <td className="px-6 py-4">
-                        <p className="text-xs font-bold text-white">{new Date(trade.created_at).toLocaleDateString('pt-BR')}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">{new Date(trade.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded">{trade.asset}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[10px] font-bold uppercase ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {trade.type === 'BUY' ? 'Compra' : 'Venda'}
+            <div className="space-y-4">
+              {filteredTrades.map((trade) => (
+                <div key={trade.id} className="bg-[#0D1425] border border-slate-800 rounded-xl p-4 flex items-center justify-between hover:border-slate-600 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${trade.type === 'BUY' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                      {trade.type === 'BUY' ? (
+                        <ArrowUpRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
+                      ) : (
+                        <ArrowDownRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">{trade.asset}</span>
+                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${trade.type === 'BUY' ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400'}`}>
+                          {trade.type === 'BUY' ? 'Long' : 'Short'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className={`text-xs font-bold ${trade.net_profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          R$ {trade.net_profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[9px] font-bold px-2 py-1 rounded uppercase ${
-                          trade.status === 'WIN' ? 'bg-emerald-500/10 text-emerald-500' : 
-                          trade.status === 'LOSS' ? 'bg-red-500/10 text-red-500' : 
-                          'bg-blue-500/10 text-blue-500'
-                        }`}>
-                          {trade.status}
+                        <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded">
+                          {trade.mental_state || 'Neutro'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{trade.wallets?.name}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button className="p-2 text-slate-500 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
-                          <button className="p-2 text-slate-500 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        {trade.trigger_id && (
+                          <span className="text-[10px] font-bold text-amber-500 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <Zap className="w-2 h-2" />
+                            {(() => {
+                              const customTrigger = triggers.find(t => t.id === trade.trigger_id);
+                              return customTrigger ? customTrigger.name : trade.trigger_id;
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium mt-1">
+                        <span>{trade.market || trade.wallets?.name || 'B3'}</span>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {trade.entry_time ? new Date(trade.entry_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date(trade.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          {trade.exit_time ? ` - ${new Date(trade.exit_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {trades.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 text-xs font-medium uppercase tracking-widest">
-                        Nenhuma operação registrada.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${trade.net_profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {formatCurrency(trade.net_profit || 0, preferences.currency)}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase">
+                        Taxas: {formatCurrency(trade.fees || 0, preferences.currency)}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase">
+                        Líquido: {formatCurrency(trade.net_profit || 0, preferences.currency)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link href={`/operations/new?id=${trade.id}`} className="p-2 text-slate-500 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Link>
+                      <button onClick={() => handleDelete(trade.id)} className="p-2 text-slate-500 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredTrades.length === 0 && (
+                <div className="text-center py-12 text-slate-500 text-xs font-medium uppercase tracking-widest">
+                  Nenhuma operação encontrada com esses filtros.
+                </div>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -256,7 +367,7 @@ export default function OperationsPage() {
             </div>
             <div className="grid grid-cols-7">
               {days.map((day, idx) => {
-                const dayTrades = trades.filter(t => isSameDay(new Date(t.created_at), day));
+                const dayTrades = filteredTrades.filter(t => isSameDay(new Date(t.created_at), day));
                 const totalProfit = dayTrades.reduce((acc, t) => acc + t.net_profit, 0);
                 const isPositive = totalProfit > 0;
                 const isNegative = totalProfit < 0;
@@ -271,7 +382,7 @@ export default function OperationsPage() {
                       )}>
                         <span className="text-[8px] font-bold text-slate-400 uppercase self-end bg-slate-800 px-1.5 py-0.5 rounded">{dayTrades.length} OP</span>
                         <p className={cn("text-[10px] font-bold mt-auto", isPositive ? "text-emerald-500" : isNegative ? "text-red-500" : "text-slate-500")}>
-                          {totalProfit !== 0 ? (totalProfit > 0 ? '+' : '') : ''}R$ {totalProfit.toLocaleString('pt-BR')}
+                          {formatCurrency(totalProfit, preferences.currency)}
                         </p>
                       </div>
                     )}

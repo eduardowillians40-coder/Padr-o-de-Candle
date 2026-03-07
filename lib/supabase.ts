@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 let supabaseInstance: any = null;
 
@@ -12,9 +12,9 @@ export const createClient = () => {
     console.warn('Supabase URL is missing or using placeholder. Authentication will not work.');
   }
 
-  // If credentials are missing, we use placeholders to prevent the app from crashing on boot.
-  // The UI should handle the "unconfigured" state gracefully.
-  supabaseInstance = createBrowserClient(
+  // Use standard supabase-js client which defaults to localStorage for session persistence.
+  // This is much more reliable inside cross-origin iframes than cookie-based auth.
+  supabaseInstance = createSupabaseClient(
     supabaseUrl || 'https://placeholder-project.supabase.co',
     supabaseAnonKey || 'placeholder-anon-key'
   );

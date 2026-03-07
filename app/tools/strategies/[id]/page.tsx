@@ -1,103 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   Zap, 
   CheckCircle2, 
-  AlertCircle, 
   Info, 
-  ArrowRight,
-  Target,
-  ShieldCheck,
-  BarChart2,
-  ChevronRight
+  ArrowRight, 
+  BarChart2, 
+  ShieldCheck, 
+  ChevronRight, 
+  Target 
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Link from 'next/link';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
-const steps = [
-  {
-    id: 1,
-    title: 'ENCONTRAR LIQUIDEZ NÍTIDA',
-    description: 'Procure por regiões óbvias de EQL (Equal Lows) ou EQH (Equal Highs).',
-    questions: [
-      { id: 'q1', label: 'Existem fundos iguais (EQL)?' },
-      { id: 'q2', label: 'Existem topos iguais (EQH)?' },
-      { id: 'q3', label: 'O suporte/resistência parece "óbvio" demais?' },
-    ]
-  },
-  {
-    id: 2,
-    title: 'CAPTURA DE LIQUIDEZ EXPRESSIVA',
-    description: 'O preço deve varrer a região de liquidez com força.',
-    questions: [
-      { id: 'q4', label: 'Houve um sweep de liquidez claro?' },
-      { id: 'q5', label: 'O preço fechou dentro do range após a varredura?' },
-      { id: 'q6', label: 'Existe reação institucional imediata?' },
-    ]
-  },
-  {
-    id: 3,
-    title: 'DIVERGÊNCIA NO RSI',
-    description: 'A divergência confirma a exaustão do movimento de varejo.',
-    questions: [
-      { id: 'q7', label: 'Existe divergência clara no RSI (14)?' },
-      { id: 'q8', label: 'A divergência ocorre em um timeframe maior (H1/H4)?' },
-    ]
-  },
-  {
-    id: 4,
-    title: 'QUEBRA DE ESTRUTURA (CHOCH)',
-    description: 'Confirmação de que o fluxo de ordens mudou.',
-    questions: [
-      { id: 'q9', label: 'Houve um ChoCH claro (quebra de pavio/corpo)?' },
-      { id: 'q10', label: 'O movimento removeu uma indução prévia?' },
-      { id: 'q11', label: 'O preço está mostrando intenção direcional?' },
-    ]
-  },
-  {
-    id: 5,
-    title: 'PONTO DE ENTRADA (OB + INDUÇÃO)',
-    description: 'Refinamento da entrada para melhor R:R.',
-    questions: [
-      { id: 'q12', label: 'Existe um Order Block válido para entrada?' },
-      { id: 'q13', label: 'Houve indução antes do toque no OB?' },
-      { id: 'q14', label: 'O stop loss está protegido atrás da mínima/máxima?' },
-      { id: 'q15', label: 'O alvo (TP) é pelo menos 3x o risco?' },
-    ]
-  }
-];
-
-export default function LiquidityStrategyPage() {
+export default function DynamicStrategyPage() {
+  const { id } = useParams();
+  const supabase = createClient();
   const router = useRouter();
-  const [activeStep, setActiveStep] = useState(1);
+  
+  const [strategy, setStrategy] = useState<any>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
 
-  const resetSetup = () => {
-    setAnswers({});
-    setActiveStep(1);
-    setResult(null);
-  };
+  useEffect(() => {
+    const fetchStrategy = async () => {
+      const { data, error } = await supabase
+        .from('strategies')
+        .select('*, strategy_steps(*, checklist_items(*))')
+        .eq('id', id)
+        .single();
+      
+      if (error || !data) {
+        router.push('/tools/strategies');
+        return;
+      }
+      setStrategy(data);
+    };
+    fetchStrategy();
+  }, [id, supabase, router]);
 
-  const handleExecuteTrade = () => {
-    router.push('/operations/new');
-  };
+  if (!strategy) return <div className="p-8 text-white">Carregando estratégia...</div>;
 
-  const totalQuestions = steps.reduce((acc, step) => acc + step.questions.length, 0);
+  const steps = strategy.strategy_steps || [];
+  const currentStep = steps[activeStepIndex];
+  
+  const totalQuestions = steps.reduce((acc: number, step: any) => acc + (step.checklist_items?.length || 0), 0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
-  const reliability = Math.round((answeredCount / totalQuestions) * 100);
+  const reliability = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
-  const toggleAnswer = (id: string) => {
-    setAnswers(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleAnswer = (itemId: string) => {
+    setAnswers(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleAnalyze = () => {
@@ -112,6 +73,14 @@ export default function LiquidityStrategyPage() {
     }, 1500);
   };
 
+  const resetSetup = () => {
+    setAnswers({});
+    setActiveStepIndex(0);
+    setResult(null);
+  };
+
+  const handleExecuteTrade = () => router.push('/operations/new');
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -119,8 +88,8 @@ export default function LiquidityStrategyPage() {
           <ShieldCheck className="w-6 h-6 text-blue-500" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">VALIDADOR DE ESTRATÉGIAS DE LIQUIDEZ</h1>
-          <p className="text-slate-500 text-xs font-medium mt-1 uppercase tracking-widest">Manual operacional para setups baseados em Smart Money e Captura de Liquidez.</p>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">{strategy.name}</h1>
+          <p className="text-slate-500 text-xs font-medium mt-1 uppercase tracking-widest">{strategy.description}</p>
         </div>
         <Link href="/tools/strategies" className="ml-auto bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all">
           Gerenciar Estratégias
@@ -150,49 +119,27 @@ export default function LiquidityStrategyPage() {
           </div>
 
           <div className="space-y-2">
-            {steps.map((step) => (
+            {steps.map((step: any, index: number) => (
               <button
                 key={step.id}
-                onClick={() => setActiveStep(step.id)}
+                onClick={() => setActiveStepIndex(index)}
                 className={cn(
                   "w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left group",
-                  activeStep === step.id 
+                  activeStepIndex === index 
                     ? "bg-blue-600/10 border-blue-500/50 text-white" 
                     : "bg-[#0D1425] border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300"
                 )}
               >
                 <div className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0",
-                  activeStep === step.id ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-500"
+                  activeStepIndex === index ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-500"
                 )}>
-                  {step.id}
+                  {index + 1}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-widest">{step.title}</span>
-                <ChevronRight className={cn("ml-auto w-4 h-4 transition-transform", activeStep === step.id && "rotate-90")} />
+                <span className="text-xs font-bold uppercase tracking-widest">{step.name}</span>
+                <ChevronRight className={cn("ml-auto w-4 h-4 transition-transform", activeStepIndex === index && "rotate-90")} />
               </button>
             ))}
-          </div>
-
-          {/* Model Summary */}
-          <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
-            <div className="flex items-center gap-2 text-blue-500">
-              <Target className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">RESUMO MODELO #1</span>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">FOCO PRINCIPAL</p>
-                <p className="text-[11px] text-slate-400 leading-relaxed">Identificar regiões de stop-loss de varejo (EQL/EQH) para buscar a liquidez necessária para o movimento.</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">CONFIRMAÇÃO RSI</p>
-                <p className="text-[11px] text-slate-400 leading-relaxed">A divergência no RSI valida que o movimento de captura não possui força real por trás.</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-white uppercase tracking-widest mb-1">ESTRUTURA (CHOCH)</p>
-                <p className="text-[11px] text-slate-400 leading-relaxed">A quebra de estrutura logo após a captura confirma o interesse institucional oposto.</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -200,7 +147,7 @@ export default function LiquidityStrategyPage() {
         <div className="lg:col-span-8 space-y-6">
           <AnimatePresence mode="wait">
             <motion.div 
-              key={activeStep}
+              key={activeStepIndex}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -211,8 +158,8 @@ export default function LiquidityStrategyPage() {
                   <Zap className="w-8 h-8 text-blue-500" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white uppercase tracking-tight">{steps[activeStep-1].title}</h2>
-                  <p className="text-slate-400 text-sm mt-1">{steps[activeStep-1].description}</p>
+                  <h2 className="text-2xl font-bold text-white uppercase tracking-tight">{currentStep.name}</h2>
+                  <p className="text-slate-400 text-sm mt-1">{currentStep.description}</p>
                 </div>
               </div>
 
@@ -222,47 +169,39 @@ export default function LiquidityStrategyPage() {
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">CHECKLIST DE VERIFICAÇÃO</span>
                 </div>
                 
-                {steps[activeStep-1].questions.map((q) => (
+                {currentStep.checklist_items?.map((item: any) => (
                   <button
-                    key={q.id}
-                    onClick={() => toggleAnswer(q.id)}
+                    key={item.id}
+                    onClick={() => toggleAnswer(item.id)}
                     className={cn(
                       "w-full flex items-center gap-4 p-5 rounded-xl border transition-all text-left",
-                      answers[q.id] 
+                      answers[item.id] 
                         ? "bg-emerald-500/5 border-emerald-500/30 text-white" 
                         : "bg-[#050A15] border-slate-800 text-slate-400 hover:border-slate-700"
                     )}
                   >
                     <div className={cn(
                       "w-5 h-5 rounded border flex items-center justify-center transition-all",
-                      answers[q.id] ? "bg-emerald-500 border-emerald-500" : "border-slate-700"
+                      answers[item.id] ? "bg-emerald-500 border-emerald-500" : "border-slate-700"
                     )}>
-                      {answers[q.id] && <CheckCircle2 className="w-4 h-4 text-white" />}
+                      {answers[item.id] && <CheckCircle2 className="w-4 h-4 text-white" />}
                     </div>
-                    <span className="text-sm font-medium">{q.label}</span>
+                    <span className="text-sm font-medium">{item.text}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-8 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex gap-4">
-                <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">DICA DE ESPECIALISTA</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">Quanto mais nítido o suporte e a resistência, melhor para a captura! O varejo coloca seus stops exatamente ali.</p>
-                </div>
-              </div>
-
               <div className="mt-8 flex justify-between">
                 <button 
-                  disabled={activeStep === 1}
-                  onClick={() => setActiveStep(prev => prev - 1)}
+                  disabled={activeStepIndex === 0}
+                  onClick={() => setActiveStepIndex(prev => prev - 1)}
                   className="px-6 py-3 rounded-xl text-sm font-bold text-slate-500 hover:text-white transition-all disabled:opacity-0"
                 >
                   PASSO ANTERIOR
                 </button>
-                {activeStep < steps.length ? (
+                {activeStepIndex < steps.length - 1 ? (
                   <button 
-                    onClick={() => setActiveStep(prev => prev + 1)}
+                    onClick={() => setActiveStepIndex(prev => prev + 1)}
                     className="px-8 py-3 bg-white text-[#050A15] rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200 transition-all"
                   >
                     PRÓXIMO PASSO

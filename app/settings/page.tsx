@@ -14,20 +14,45 @@ import {
   Save,
   LogOut,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Coins
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
+import { useUserPreferences } from '@/app/context/UserPreferencesContext';
+
+const STANDARD_TRIGGERS = [
+  'Rompimento de Topo/Fundo',
+  'Pullback na Média',
+  'Cruzamento de Médias',
+  'Suporte/Resistência',
+  'Volume Climático'
+];
 
 export default function SettingsPage() {
   const supabase = createClient();
+  const { setPreferences } = useUserPreferences();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<any>({
+    full_name: '',
+    username: '',
+    phone: '',
+    currency: 'BRL',
+    theme: 'dark',
+    email: '',
+    avatar_url: ''
+  });
   const [triggers, setTriggers] = useState<any[]>([]);
   const [newTrigger, setNewTrigger] = useState('');
-
   const [refresh, setRefresh] = useState(0);
+  const [activeTab, setActiveTab] = useState('profile');
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +67,17 @@ export default function SettingsPage() {
         .eq('id', user.id)
         .single();
       
-      setProfile(profileData);
+      if (profileData) {
+        setProfile({
+          full_name: profileData.full_name || '',
+          username: profileData.username || '',
+          phone: profileData.phone || '',
+          currency: profileData.currency || 'BRL',
+          theme: profileData.theme || 'dark',
+          email: user.email || '',
+          avatar_url: profileData.avatar_url || ''
+        });
+      }
 
       // Fetch Triggers
       const { data: triggerData } = await supabase
@@ -58,6 +93,43 @@ export default function SettingsPage() {
     fetchData();
   }, [supabase, refresh]);
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      console.error('Erro no upload:', uploadError);
+      alert('Erro ao fazer upload da imagem: ' + uploadError.message);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Erro ao atualizar perfil:', updateError);
+      alert('Erro ao atualizar perfil com nova imagem: ' + updateError.message);
+    } else {
+      setRefresh(prev => prev + 1);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,13 +140,24 @@ export default function SettingsPage() {
       .update({
         full_name: profile.full_name,
         username: profile.username,
+        phone: profile.phone,
+        currency: profile.currency,
+        theme: profile.theme,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
 
     if (!error) {
-      alert('Perfil atualizado com sucesso!');
+      alert('Configurações atualizadas com sucesso!');
+      setPreferences({
+        currency: profile.currency,
+        theme: profile.theme,
+        phone: profile.phone
+      });
       setRefresh(prev => prev + 1);
+    } else {
+      console.error('Erro ao salvar perfil:', error);
+      alert('Erro ao salvar configurações: ' + error.message);
     }
     setSaving(false);
   };
@@ -98,8 +181,39 @@ export default function SettingsPage() {
   };
 
   const handleDeleteTrigger = async (id: string) => {
-    const { error } = await supabase.from('triggers').delete().eq('id', id);
-    if (!error) setRefresh(prev => prev + 1);
+    const { error } = await supabase
+      .from('triggers')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setRefresh(prev => prev + 1);
+    } else {
+      console.error('Erro ao deletar gatilho:', error);
+      alert('Erro ao deletar gatilho: ' + error.message);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('As novas senhas não coincidem!');
+      return;
+    }
+    setPasswordSaving(true);
+    
+    // Supabase password update
+    const { error } = await supabase.auth.updateUser({
+      password: passwordData.newPassword
+    });
+
+    if (error) {
+      console.error('Erro ao atualizar senha:', error);
+      alert('Erro ao atualizar senha: ' + error.message);
+    } else {
+      alert('Senha atualizada com sucesso!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    }
+    setPasswordSaving(false);
   };
 
   if (loading) {
@@ -122,14 +236,13 @@ export default function SettingsPage() {
         <div className="lg:col-span-3 space-y-2">
           {[
             { id: 'profile', label: 'MEU PERFIL', icon: User },
-            { id: 'triggers', label: 'GATILHOS (TRIGGERS)', icon: Zap },
-            { id: 'notifications', label: 'NOTIFICAÇÕES', icon: Bell },
+            { id: 'triggers', label: 'GATILHOS', icon: Zap },
             { id: 'security', label: 'SEGURANÇA', icon: Shield },
-            { id: 'billing', label: 'ASSINATURA', icon: CreditCard },
           ].map((item) => (
             <button
               key={item.id}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${item.id === 'profile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}
             >
               <item.icon className="w-4 h-4" />
               {item.label}
@@ -149,12 +262,12 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="lg:col-span-9 space-y-8">
-          {/* Profile Section */}
-          <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-blue-500" />
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest">INFORMAÇÕES PESSOAIS</h3>
-            </div>
+          {activeTab === 'profile' && (
+            <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-blue-500" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">INFORMAÇÕES PESSOAIS</h3>
+              </div>
 
             <div className="flex flex-col md:flex-row gap-8 items-start">
               <div className="relative group">
@@ -171,9 +284,19 @@ export default function SettingsPage() {
                     <User className="w-12 h-12 text-slate-700" />
                   )}
                 </div>
-                <button className="absolute -bottom-2 -right-2 p-2 bg-blue-600 rounded-lg text-white shadow-lg border border-blue-500 hover:bg-blue-500 transition-all">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label 
+                  htmlFor="avatar-upload"
+                  className="absolute -bottom-2 -right-2 p-2 bg-blue-600 rounded-lg text-white shadow-lg border border-blue-500 hover:bg-blue-500 transition-all cursor-pointer"
+                >
                   <Camera className="w-4 h-4" />
-                </button>
+                </label>
               </div>
 
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -212,6 +335,8 @@ export default function SettingsPage() {
                   <input 
                     type="text" 
                     placeholder="(00) 00000-0000"
+                    value={profile?.phone || ''}
+                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
                     className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
@@ -228,72 +353,30 @@ export default function SettingsPage() {
                 {saving ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
               </button>
             </div>
-          </div>
 
-          {/* Triggers Section */}
-          <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
-            <div className="flex justify-between items-center">
+            {/* App Preferences moved back here */}
+            <div className="pt-8 border-t border-slate-800 space-y-8">
               <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-amber-500" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-widest">GATILHOS OPERACIONAIS</h3>
+                <SettingsIcon className="w-5 h-5 text-slate-500" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">PREFERÊNCIAS DO APP</h3>
               </div>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={newTrigger}
-                  onChange={(e) => setNewTrigger(e.target.value)}
-                  placeholder="Novo gatilho..."
-                  className="bg-[#050A15] border border-slate-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <button 
-                  onClick={handleAddTrigger}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
-                >
-                  <Plus className="w-3 h-3" /> ADICIONAR
-                </button>
-              </div>
-            </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Defina os gatilhos que você utiliza para entrar em uma operação. Eles estarão disponíveis no formulário de registro de trade.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {triggers.map((trigger) => (
-                <div key={trigger.id} className="flex items-center justify-between p-4 bg-[#050A15] border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <span className="text-sm font-bold text-white uppercase tracking-tight">{trigger.name}</span>
-                  </div>
-                  <button 
-                    onClick={() => handleDeleteTrigger(trigger.id)}
-                    className="p-2 text-slate-500 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* App Preferences */}
-          <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
-            <div className="flex items-center gap-3">
-              <SettingsIcon className="w-5 h-5 text-slate-500" />
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest">PREFERÊNCIAS DO APP</h3>
-            </div>
-
-            <div className="space-y-6">
               <div className="flex items-center justify-between p-4 bg-[#050A15] border border-slate-800 rounded-xl">
                 <div>
-                  <p className="text-sm font-bold text-white uppercase tracking-tight">MOEDA PADRÃO</p>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Defina a moeda principal para cálculos</p>
+                  <p className="text-sm font-bold text-white uppercase tracking-tight">MOEDA DO SISTEMA</p>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Escolha a moeda para exibição de valores</p>
                 </div>
-                <select className="bg-slate-800 border-none rounded-lg px-4 py-2 text-xs font-bold text-white focus:ring-0">
-                  <option>BRL (R$)</option>
-                  <option>USD ($)</option>
-                  <option>EUR (€)</option>
-                </select>
+                <div className="flex bg-slate-800 p-1 rounded-lg">
+                  {['BRL', 'USD', 'USDT'].map((curr) => (
+                    <button 
+                      key={curr}
+                      onClick={() => setProfile({...profile, currency: curr})}
+                      className={`px-4 py-1.5 rounded-md text-[10px] font-bold ${profile.currency === curr ? 'bg-blue-600 text-white' : 'text-slate-500'}`}
+                    >
+                      {curr}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-[#050A15] border border-slate-800 rounded-xl">
@@ -302,12 +385,151 @@ export default function SettingsPage() {
                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Escolha a aparência da interface</p>
                 </div>
                 <div className="flex bg-slate-800 p-1 rounded-lg">
-                  <button className="px-4 py-1.5 rounded-md text-[10px] font-bold bg-blue-600 text-white">DARK</button>
-                  <button className="px-4 py-1.5 rounded-md text-[10px] font-bold text-slate-500">LIGHT</button>
+                  <button 
+                    onClick={() => {
+                      console.log('Mudando tema para dark');
+                      setProfile({...profile, theme: 'dark'});
+                    }}
+                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold ${profile.theme === 'dark' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}
+                  >DARK</button>
+                  <button 
+                    onClick={() => {
+                      console.log('Mudando tema para light');
+                      setProfile({...profile, theme: 'light'});
+                    }}
+                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold ${profile.theme === 'light' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}
+                  >LIGHT</button>
                 </div>
               </div>
             </div>
           </div>
+          )}
+
+          {activeTab === 'triggers' && (
+            <div className="space-y-8">
+              {/* Trigger Management */}
+              <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <Zap className="w-5 h-5 text-amber-500" />
+                    <h3 className="text-xs font-bold text-white uppercase tracking-widest">MEUS GATILHOS PERSONALIZADOS</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={newTrigger}
+                      onChange={(e) => setNewTrigger(e.target.value)}
+                      placeholder="Novo gatilho..."
+                      className="bg-[#050A15] border border-slate-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <button 
+                      onClick={handleAddTrigger}
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+                    >
+                      <Plus className="w-3 h-3" /> ADICIONAR
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Defina seus próprios gatilhos operacionais. Eles estarão disponíveis para seleção em suas operações.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {triggers.map((trigger) => (
+                    <div key={trigger.id} className="flex items-center justify-between p-4 bg-[#050A15] border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        <span className="text-sm font-bold text-white uppercase tracking-tight">{trigger.name}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteTrigger(trigger.id)}
+                        className="p-2 text-slate-500 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {triggers.length === 0 && (
+                    <div className="col-span-full py-8 text-center border border-dashed border-slate-800 rounded-xl">
+                      <p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Nenhum gatilho personalizado cadastrado</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Standard Triggers */}
+              <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">GATILHOS PADRÃO DO SISTEMA</h3>
+                </div>
+                
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Estes são gatilhos pré-definidos que estão sempre disponíveis para uso.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {STANDARD_TRIGGERS.map((trigger, index) => (
+                    <div key={index} className="flex items-center gap-3 p-4 bg-[#050A15]/50 border border-slate-800/50 rounded-xl">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500/50" />
+                      <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">{trigger}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-blue-500" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">SEGURANÇA DA CONTA</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Senha Atual</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                    className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nova Senha</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                    className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confirmar Senha</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                    className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button 
+                  onClick={handleUpdatePassword}
+                  disabled={passwordSaving}
+                  className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {passwordSaving ? 'ATUALIZANDO...' : 'ATUALIZAR SEGURANÇA'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   LayoutDashboard, 
@@ -26,12 +26,35 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050A15] flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
+  );
+}
+
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [strategies, setStrategies] = useState<any[]>([]);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const selectedWallet = searchParams.get('wallet') || '';
+
+  const handleWalletChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newWallet = e.target.value;
+    const params = new URLSearchParams(searchParams.toString());
+    if (newWallet) {
+      params.set('wallet', newWallet);
+    } else {
+      params.delete('wallet');
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const [isConfigured, setIsConfigured] = useState(true);
 
@@ -62,7 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.log('Auth: No session found, waiting for sync...');
         const timeout = setTimeout(() => {
           if (mounted) {
-            supabase.auth.getSession().then(({ data: { session: finalSession } }) => {
+            supabase.auth.getSession().then(({ data: { session: finalSession } }: any) => {
               if (mounted) {
                 if (!finalSession) {
                   console.log('Auth: Still no session, redirecting');
@@ -82,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (!mounted) return;
       console.log('Auth: Event changed ->', event);
 
@@ -107,6 +130,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
+  useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        const { data: walletsData } = await supabase.from('wallets').select('*').eq('user_id', user.id);
+        const { data: strategiesData } = await supabase.from('strategies').select('*').eq('user_id', user.id);
+        if (walletsData) setWallets(walletsData);
+        if (strategiesData) setStrategies(strategiesData);
+      };
+      fetchData();
+
+      // Listener em tempo real
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'strategies' }, () => {
+          fetchData();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, supabase]);
+
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Carteiras', icon: Wallet, href: '/wallets' },
@@ -119,6 +166,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       { name: 'Ondas de Elliott', href: '/tools/elliott' },
       { name: 'Simular Performance', href: '/tools/simulator' },
       { name: 'Sessões de Mercado', href: '/tools/sessions' },
+      // Estratégias Dinâmicas
+      ...strategies.map(s => ({ name: s.name, href: `/tools/strategies/${s.id}` })),
     ]},
     { name: 'Configurações', icon: Settings, href: '/settings' },
   ];
@@ -241,8 +290,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
             </h2>
             <div className="h-6 w-px bg-slate-800 mx-2" />
-            <select className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option>Todas as carteiras</option>
+            <select 
+              value={selectedWallet}
+              onChange={handleWalletChange}
+              className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Todas as carteiras</option>
+              {wallets.map(wallet => (
+                <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
+              ))}
             </select>
           </div>
 

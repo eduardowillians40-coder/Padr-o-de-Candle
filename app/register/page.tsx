@@ -30,7 +30,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -44,7 +44,13 @@ export default function RegisterPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/login?message=Check your email to confirm your registration');
+      if (data.session) {
+        // Se a confirmação de email estiver desativada, o usuário já está logado
+        router.push('/dashboard');
+      } else {
+        // Se a confirmação estiver ativada, pede para checar o email
+        router.push('/login?message=Conta criada! Verifique seu email para confirmar o cadastro.');
+      }
     }
   };
 

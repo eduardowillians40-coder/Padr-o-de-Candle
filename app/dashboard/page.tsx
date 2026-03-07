@@ -352,14 +352,14 @@ function DashboardContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8"
+        className="bg-[#0D1425] border border-slate-800 rounded-2xl p-4 md:p-8 min-w-0"
       >
         <div className="flex items-center gap-3 mb-8">
           <TrendingUp className="w-5 h-5 text-blue-500" />
-          <h3 className="font-display font-bold text-white uppercase tracking-widest">EVOLUÇÃO DO SALDO</h3>
+          <h3 className="font-display font-bold text-white uppercase tracking-widest text-sm md:text-base">EVOLUÇÃO DO SALDO</h3>
         </div>
         
-        <div className="h-[400px] w-full">
+        <div className="h-[300px] md:h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>

@@ -187,22 +187,22 @@ export default function OperationsPage() {
     <div className="space-y-8 p-6">
       {/* Header and Filters Section */}
       <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Histórico de Operações</h1>
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Acompanhe e analise cada detalhe das suas entradas.</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white uppercase tracking-tight">Histórico de Operações</h1>
+            <p className="text-slate-500 text-[10px] md:text-xs font-medium uppercase tracking-widest mt-1">Acompanhe e analise cada detalhe das suas entradas.</p>
           </div>
           
-          <div className="flex bg-[#0D1425] p-1 rounded-xl border border-slate-800">
+          <div className="flex bg-[#0D1425] p-1 rounded-xl border border-slate-800 w-full md:w-auto">
             <button 
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <List className="w-4 h-4" /> LISTA
             </button>
             <button 
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <CalendarIcon className="w-4 h-4" /> CALENDÁRIO
             </button>
@@ -356,26 +356,26 @@ export default function OperationsPage() {
           >
             <div className="space-y-4">
               {filteredTrades.map((trade) => (
-                <div key={trade.id} className="bg-[#0D1425] border border-slate-800 rounded-xl p-4 flex items-center justify-between hover:border-slate-600 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${trade.type === 'BUY' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                <div key={trade.id} className="bg-[#0D1425] border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-slate-600 transition-colors">
+                  <div className="flex items-start md:items-center gap-4 w-full md:w-auto">
+                    <div className={`p-3 rounded-lg shrink-0 ${trade.type === 'BUY' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
                       {trade.type === 'BUY' ? (
                         <ArrowUpRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
                       ) : (
                         <ArrowDownRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">{trade.asset}</span>
-                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${trade.type === 'BUY' ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-bold text-white truncate">{trade.asset}</span>
+                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${trade.type === 'BUY' ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400'}`}>
                           {trade.type === 'BUY' ? 'Long' : 'Short'}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
                           {trade.mental_state || 'Neutro'}
                         </span>
                         {trade.trigger_id && (
-                          <span className="text-[10px] font-bold text-amber-500 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-amber-500 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
                             <Zap className="w-2 h-2" />
                             {(() => {
                               const customTrigger = triggers.find(t => t.id === trade.trigger_id);
@@ -384,22 +384,24 @@ export default function OperationsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium mt-1">
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 font-medium mt-1">
                         <span>{trade.market || trade.wallets?.name || 'B3'}</span>
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString('pt-BR') : new Date(trade.created_at).toLocaleDateString('pt-BR')}
-                          {' • '}
-                          {trade.entry_time ? new Date(trade.entry_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date(trade.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          {trade.exit_time ? ` - ${new Date(trade.exit_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <span className="truncate">
+                            {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString('pt-BR') : new Date(trade.created_at).toLocaleDateString('pt-BR')}
+                            {' • '}
+                            {trade.entry_time ? new Date(trade.entry_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date(trade.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            {trade.exit_time ? ` - ${new Date(trade.exit_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-6 border-t border-slate-800 md:border-t-0 pt-4 md:pt-0">
+                    <div className="text-left md:text-right">
                       <p className={`text-sm font-bold ${trade.net_profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                         {formatCurrency(trade.net_profit || 0, preferences.currency)}
                       </p>
@@ -410,9 +412,9 @@ export default function OperationsPage() {
                         Líquido: {formatCurrency(trade.net_profit || 0, preferences.currency)}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Link href={`/operations/new?id=${trade.id}`} className="p-2 text-slate-500 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Link>
-                      <button onClick={() => handleDelete(trade.id)} className="p-2 text-slate-500 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex gap-2 shrink-0">
+                      <Link href={`/operations/new?id=${trade.id}`} className="p-2 bg-slate-800/50 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"><Edit2 className="w-4 h-4" /></Link>
+                      <button onClick={() => handleDelete(trade.id)} className="p-2 bg-slate-800/50 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>

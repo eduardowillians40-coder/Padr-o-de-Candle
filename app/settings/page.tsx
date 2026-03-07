@@ -227,13 +227,13 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-white uppercase tracking-tight">CONFIGURAÇÕES DO SISTEMA</h1>
-        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Gerencie seu perfil, gatilhos operacionais e preferências</p>
+        <h1 className="text-xl md:text-2xl font-bold text-white uppercase tracking-tight">CONFIGURAÇÕES DO SISTEMA</h1>
+        <p className="text-slate-500 text-[10px] md:text-xs font-medium uppercase tracking-widest">Gerencie seu perfil, gatilhos operacionais e preferências</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Navigation */}
-        <div className="lg:col-span-3 space-y-2">
+        <div className="lg:col-span-3 flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 custom-scrollbar">
           {[
             { id: 'profile', label: 'MEU PERFIL', icon: User },
             { id: 'triggers', label: 'GATILHOS', icon: Zap },
@@ -242,20 +242,21 @@ export default function SettingsPage() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}
+              className={`flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}
             >
               <item.icon className="w-4 h-4" />
               {item.label}
             </button>
           ))}
           
-          <div className="pt-8">
+          <div className="pt-0 lg:pt-8 flex-shrink-0 lg:w-full">
             <button 
               onClick={() => supabase.auth.signOut()}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-all"
             >
               <LogOut className="w-4 h-4" />
-              SAIR DA CONTA
+              <span className="hidden lg:inline">SAIR DA CONTA</span>
+              <span className="lg:hidden">SAIR</span>
             </button>
           </div>
         </div>
@@ -409,22 +410,22 @@ export default function SettingsPage() {
             <div className="space-y-8">
               {/* Trigger Management */}
               <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center gap-3">
                     <Zap className="w-5 h-5 text-amber-500" />
                     <h3 className="text-xs font-bold text-white uppercase tracking-widest">MEUS GATILHOS PERSONALIZADOS</h3>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                     <input 
                       type="text" 
                       value={newTrigger}
                       onChange={(e) => setNewTrigger(e.target.value)}
                       placeholder="Novo gatilho..."
-                      className="bg-[#050A15] border border-slate-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 bg-[#050A15] border border-slate-800 rounded-lg px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <button 
                       onClick={handleAddTrigger}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
                     >
                       <Plus className="w-3 h-3" /> ADICIONAR
                     </button>

@@ -220,15 +220,15 @@ export default function WalletsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-white">Gerencie suas carteiras de trading</h1>
-        <div className="flex justify-between items-center mt-4">
-          <div className="flex gap-4 flex-1 max-w-2xl">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-xl md:text-2xl font-bold text-white">Gerencie suas carteiras de trading</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+          <div className="flex gap-4 flex-1 w-full max-w-2xl">
             {/* Filters hidden for brevity */}
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all mt-6"
+            className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg flex justify-center items-center gap-2 text-sm font-bold transition-all"
           >
             <Plus className="w-4 h-4" />
             Nova Carteira

@@ -312,31 +312,33 @@ function NewOperationForm() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
+            type="button"
             onClick={() => router.back()}
             className="p-2 text-slate-500 hover:text-white transition-all rounded-lg hover:bg-slate-800"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-white uppercase tracking-tight">{isEditMode ? 'Editar Operação' : 'Nova Operação'}</h1>
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">{isEditMode ? 'Atualize os detalhes da sua operação.' : 'Registre os detalhes da sua entrada no mercado.'}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white uppercase tracking-tight">{isEditMode ? 'Editar Operação' : 'Nova Operação'}</h1>
+            <p className="text-slate-500 text-[10px] md:text-xs font-medium uppercase tracking-widest mt-1">{isEditMode ? 'Atualize os detalhes da sua operação.' : 'Registre os detalhes da sua entrada no mercado.'}</p>
           </div>
         </div>
         <button 
+          type="button"
           onClick={handleSave}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
+          className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           {loading ? 'SALVANDO...' : 'SALVAR OPERAÇÃO'}
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="space-y-6 md:col-span-1">
+      <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="space-y-6 md:col-span-1 lg:col-span-1">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Target className="w-4 h-4" />
@@ -427,7 +429,7 @@ function NewOperationForm() {
               Execução
             </h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Horário de Entrada</label>
                 <input 
@@ -512,7 +514,7 @@ function NewOperationForm() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 md:col-span-1 lg:col-span-1">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Brain className="w-4 h-4" />
@@ -559,7 +561,7 @@ function NewOperationForm() {
                 </select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 col-span-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gatilho (Trigger)</label>
                 <select 
                   value={formData.trigger_id}
@@ -618,7 +620,7 @@ function NewOperationForm() {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Prints da Tela (Opcional)</label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="border-2 border-dashed border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:border-slate-600 hover:bg-slate-800/20 transition-all cursor-pointer relative overflow-hidden min-h-[120px]">
                   {formData.print_before ? (
                     <Image 
@@ -676,7 +678,7 @@ function NewOperationForm() {
           </div>
         </div>
 
-        <div className="space-y-6 md:col-span-1">
+        <div className="space-y-6 md:col-span-2 lg:col-span-1">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6 sticky top-8">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Wallet className="w-4 h-4" />

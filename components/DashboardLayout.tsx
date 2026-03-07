@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Plus
+  Plus,
+  Menu,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -37,6 +39,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [wallets, setWallets] = useState<any[]>([]);
   const [strategies, setStrategies] = useState<any[]>([]);
   const router = useRouter();
@@ -125,6 +128,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [router, supabase]);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
@@ -206,22 +213,39 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-[#050A15]">
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-[#0D1425] border-r border-slate-800 transition-all duration-300 flex flex-col z-50",
-          sidebarOpen ? "w-64" : "w-20"
+          "bg-[#0D1425] border-r border-slate-800 transition-all duration-300 flex flex-col z-50 fixed md:relative h-screen shrink-0",
+          sidebarOpen ? "w-64" : "w-20",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        <div className="p-6 flex items-center gap-3">
-          <div className="bg-blue-600/20 p-2 rounded-lg border border-blue-500/30 shrink-0">
-            <CandlestickChart className="w-6 h-6 text-blue-500" />
+        <div className="p-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600/20 p-2 rounded-lg border border-blue-500/30 shrink-0">
+              <CandlestickChart className="w-6 h-6 text-blue-500" />
+            </div>
+            {sidebarOpen && (
+              <span className="font-display font-bold text-lg text-white whitespace-nowrap">
+                Padrão 3 Candles
+              </span>
+            )}
           </div>
-          {sidebarOpen && (
-            <span className="font-display font-bold text-lg text-white whitespace-nowrap">
-              Padrão 3 Candles
-            </span>
-          )}
+          <button 
+            className="md:hidden text-slate-400 hover:text-white"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -282,18 +306,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden w-full">
         {/* Header */}
-        <header className="h-20 bg-[#0D1425]/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-white capitalize">
+        <header className="h-20 bg-[#0D1425]/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-3 md:gap-4">
+            <button 
+              className="md:hidden p-2 text-slate-400 hover:text-white"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <h2 className="text-xl font-bold text-white capitalize hidden sm:block">
               {pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
             </h2>
-            <div className="h-6 w-px bg-slate-800 mx-2" />
+            <div className="h-6 w-px bg-slate-800 mx-2 hidden sm:block" />
             <select 
               value={selectedWallet}
               onChange={handleWalletChange}
-              className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-1.5 md:px-3 text-xs md:text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[140px] md:max-w-none truncate"
             >
               <option value="">Todas as carteiras</option>
               {wallets.map(wallet => (
@@ -302,13 +332,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </select>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             <Link 
               href="/operations/new"
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-blue-600/20"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 md:px-4 rounded-lg flex items-center gap-2 text-xs md:text-sm font-bold transition-all shadow-lg shadow-blue-600/20"
             >
               <Plus className="w-4 h-4" />
-              Nova Operação
+              <span className="hidden sm:inline">Nova Operação</span>
+              <span className="sm:hidden">Nova</span>
             </Link>
 
             <div className="flex items-center gap-3">
@@ -316,7 +347,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-bold text-white leading-none">{user?.user_metadata?.full_name || 'Trader Pro'}</p>
                 <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">TRADER PRO</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-500 font-bold">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-500 font-bold text-sm md:text-base">
                 {user?.user_metadata?.full_name?.charAt(0) || 'U'}
               </div>
             </div>
@@ -324,7 +355,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           {children}
         </div>
       </main>

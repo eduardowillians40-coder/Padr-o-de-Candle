@@ -22,7 +22,8 @@ import {
   Zap,
   Edit2,
   Trash2,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUserPreferences } from '@/app/context/UserPreferencesContext';
@@ -62,6 +63,15 @@ export default function OperationsPage() {
   const [filterTrigger, setFilterTrigger] = useState('all');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+
+  const clearFilters = () => {
+    setFilterWallet('all');
+    setFilterAsset('');
+    setFilterType('all');
+    setFilterTrigger('all');
+    setFilterStartDate('');
+    setFilterEndDate('');
+  };
 
   const [refresh, setRefresh] = useState(0);
 
@@ -123,7 +133,7 @@ export default function OperationsPage() {
   // Lógica de filtragem robusta
   const filteredTrades = trades.filter(trade => {
     const matchesWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
-    const matchesAsset = filterAsset === '' || trade.asset.toLowerCase().includes(filterAsset.toLowerCase());
+    const matchesAsset = filterAsset === '' || (trade.asset && trade.asset.toLowerCase().includes(filterAsset.toLowerCase()));
     const matchesType = filterType === 'all' || (filterType === 'LONG' ? trade.type === 'BUY' : trade.type === 'SELL');
     
     // Improved trigger matching
@@ -134,8 +144,19 @@ export default function OperationsPage() {
     
     // Lógica de período
     const tradeDate = new Date(trade.created_at);
-    const matchesPeriod = (!filterStartDate || tradeDate >= new Date(filterStartDate)) &&
-                          (!filterEndDate || tradeDate <= new Date(filterEndDate));
+    let matchesPeriod = true;
+    
+    if (filterStartDate) {
+      const [year, month, day] = filterStartDate.split('-').map(Number);
+      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      matchesPeriod = matchesPeriod && tradeDate >= start;
+    }
+    
+    if (filterEndDate) {
+      const [year, month, day] = filterEndDate.split('-').map(Number);
+      const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+      matchesPeriod = matchesPeriod && tradeDate <= end;
+    }
 
     return matchesWallet && matchesAsset && matchesType && matchesTrigger && matchesPeriod;
   });
@@ -189,18 +210,42 @@ export default function OperationsPage() {
         </div>
 
         {/* Filtros */}
-        <div className="flex gap-4 bg-[#0D1425] p-4 rounded-xl border border-slate-800 w-full">
-          <select value={filterWallet} onChange={(e) => setFilterWallet(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+        <div className="flex flex-wrap gap-4 bg-[#0D1425] p-4 rounded-xl border border-slate-800 w-full">
+          <select 
+            value={filterWallet} 
+            onChange={(e) => setFilterWallet(e.target.value)} 
+            className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none min-w-[180px] flex-1"
+          >
             <option value="all">Todas as carteiras</option>
             {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
-          <input type="text" placeholder="Filtrar por ativo..." value={filterAsset} onChange={(e) => setFilterAsset(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+          
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Filtrar por ativo..." 
+              value={filterAsset} 
+              onChange={(e) => setFilterAsset(e.target.value)} 
+              className="w-full bg-[#050A15] text-white text-sm font-bold pl-10 pr-3 py-3 rounded-lg border border-slate-800 focus:outline-none" 
+            />
+          </div>
+
+          <select 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value)} 
+            className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none min-w-[150px] flex-1"
+          >
             <option value="all">Todos (Long/Short)</option>
             <option value="LONG">Long</option>
             <option value="SHORT">Short</option>
           </select>
-          <select value={filterTrigger} onChange={(e) => setFilterTrigger(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1">
+
+          <select 
+            value={filterTrigger} 
+            onChange={(e) => setFilterTrigger(e.target.value)} 
+            className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none min-w-[180px] flex-1"
+          >
             <option value="all">Todos os Gatilhos</option>
             <optgroup label="Gatilhos Padrão">
               {STANDARD_TRIGGERS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -211,8 +256,35 @@ export default function OperationsPage() {
               </optgroup>
             )}
           </select>
-          <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
-          <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none flex-1" />
+
+          <div className="relative flex-1 min-w-[150px]">
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <input 
+              type="date" 
+              value={filterStartDate} 
+              onChange={(e) => setFilterStartDate(e.target.value)} 
+              className="w-full bg-[#050A15] text-white text-sm font-bold pl-10 pr-3 py-3 rounded-lg border border-slate-800 focus:outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+            />
+          </div>
+
+          <div className="relative flex-1 min-w-[150px]">
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <input 
+              type="date" 
+              value={filterEndDate} 
+              onChange={(e) => setFilterEndDate(e.target.value)} 
+              className="w-full bg-[#050A15] text-white text-sm font-bold pl-10 pr-3 py-3 rounded-lg border border-slate-800 focus:outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+            />
+          </div>
+
+          <button 
+            onClick={clearFilters}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-lg border border-slate-700 transition-all flex items-center gap-2 text-sm font-bold group"
+            title="Limpar Filtros"
+          >
+            <X className="w-4 h-4 group-hover:text-red-500 transition-colors" />
+            <span className="hidden xl:inline">LIMPAR</span>
+          </button>
         </div>
       </div>
 
@@ -317,6 +389,8 @@ export default function OperationsPage() {
                         <span>•</span>
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
+                          {trade.entry_time ? new Date(trade.entry_time).toLocaleDateString('pt-BR') : new Date(trade.created_at).toLocaleDateString('pt-BR')}
+                          {' • '}
                           {trade.entry_time ? new Date(trade.entry_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date(trade.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                           {trade.exit_time ? ` - ${new Date(trade.exit_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                         </div>
@@ -372,8 +446,8 @@ export default function OperationsPage() {
             </div>
             <div className="grid grid-cols-7">
               {days.map((day, idx) => {
-                const dayTrades = filteredTrades.filter(t => isSameDay(new Date(t.created_at), day));
-                const totalProfit = dayTrades.reduce((acc, t) => acc + t.net_profit, 0);
+                const dayTrades = filteredTrades.filter(t => t.created_at && isSameDay(new Date(t.created_at), day));
+                const totalProfit = dayTrades.reduce((acc, t) => acc + (t.net_profit || 0), 0);
                 const isPositive = totalProfit > 0;
                 const isNegative = totalProfit < 0;
 

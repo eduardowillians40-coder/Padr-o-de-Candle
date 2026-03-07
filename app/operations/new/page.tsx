@@ -165,7 +165,7 @@ function NewOperationForm() {
           .order('created_at', { ascending: false });
 
         if (trades) {
-          const todayTrades = trades.filter(t => t.created_at >= startOfDay);
+          const todayTrades = trades.filter((t: any) => t.created_at >= startOfDay);
           const tradesTodayCount = todayTrades.length;
           
           let consecutiveLosses = 0;
@@ -174,7 +174,7 @@ function NewOperationForm() {
             else break;
           }
 
-          const weeklyLosses = trades.filter(t => t.status === 'LOSS').length;
+          const weeklyLosses = trades.filter((t: any) => t.status === 'LOSS').length;
 
           setWalletStats({
             tradesToday: tradesTodayCount,

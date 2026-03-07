@@ -221,10 +221,16 @@ function NewOperationForm() {
       }
     }
 
-    const entry = parseFloat(formData.entry_price);
-    const exit = parseFloat(formData.exit_price);
-    const qty = parseFloat(formData.quantity);
-    const fees = parseFloat(formData.fees);
+    const parseNumber = (val: string) => {
+      if (!val) return 0;
+      const parsed = parseFloat(val.replace(',', '.'));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const entry = parseNumber(formData.entry_price);
+    const exit = parseNumber(formData.exit_price);
+    const qty = parseNumber(formData.quantity);
+    const fees = parseNumber(formData.fees);
     
     const gross_profit = (exit - entry) * qty * (formData.type === 'BUY' ? 1 : -1);
     const net_profit = gross_profit - fees;

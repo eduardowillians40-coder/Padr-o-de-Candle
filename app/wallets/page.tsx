@@ -105,13 +105,19 @@ export default function WalletsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const parseNumber = (val: string) => {
+      if (!val) return 0;
+      const parsed = parseFloat(val.replace(',', '.'));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
     const { data, error } = await supabase
       .from('wallets')
       .insert({
         user_id: user.id,
         name: newWallet.name,
-        initial_balance: parseFloat(newWallet.initial_balance),
-        meta_value: parseFloat(newWallet.meta_value) || 0
+        initial_balance: parseNumber(newWallet.initial_balance),
+        meta_value: parseNumber(newWallet.meta_value)
       })
       .select();
 
@@ -177,12 +183,18 @@ export default function WalletsPage() {
     e.preventDefault();
     if (!editingWallet) return;
 
+    const parseNumber = (val: string | number) => {
+      if (!val) return 0;
+      const parsed = parseFloat(String(val).replace(',', '.'));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
     const { error } = await supabase
       .from('wallets')
       .update({
         name: editingWallet.name,
-        initial_balance: parseFloat(editingWallet.initial_balance),
-        meta_value: parseFloat(editingWallet.meta_value) || 0
+        initial_balance: parseNumber(editingWallet.initial_balance),
+        meta_value: parseNumber(editingWallet.meta_value)
       })
       .eq('id', editingWallet.id);
 

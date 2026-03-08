@@ -882,9 +882,10 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={stats.sleepChartData}
-                    onClick={(data) => {
-                      if (data && data.activeLabel) {
-                        setFilterSleep(data.activeLabel === filterSleep ? 'all' : data.activeLabel);
+                    onClick={(data: any) => {
+                      if (data && data.activeLabel !== undefined && data.activeLabel !== null) {
+                        const label = String(data.activeLabel);
+                        setFilterSleep(label === filterSleep ? 'all' : label);
                       }
                     }}
                   >

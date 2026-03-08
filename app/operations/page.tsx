@@ -435,7 +435,7 @@ export default function OperationsPage() {
                           </span>
                         )}
                         <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
-                          {trade.mental_state || 'Neutro'}
+                          {trade.mental_state || 'NEUTRO'}
                         </span>
                         {trade.strategy === 'REGRA DOS 3 TIMES' ? (
                           <Link href="/strategies/regra-dos-3-times" className="text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase bg-blue-500/10 px-1.5 py-0.5 rounded shrink-0 transition-colors">

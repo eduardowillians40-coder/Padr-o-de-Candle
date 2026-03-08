@@ -22,8 +22,21 @@ import {
 import { motion } from 'motion/react';
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 import jsPDF from 'jspdf';
+
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  PieChart,
+  Pie
+} from 'recharts';
 
 export default function ReportsPage() {
   const { preferences } = useUserPreferences();
@@ -35,10 +48,13 @@ export default function ReportsPage() {
   const [triggers, setTriggers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, any>>({});
 
   // Filters
   const [filterWallet, setFilterWallet] = useState('all');
   const [filterMarket, setFilterMarket] = useState('all');
+  const [filterEmotion, setFilterEmotion] = useState('all');
+  const [filterSleep, setFilterSleep] = useState('all');
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | 'month'>('month');
 
   useEffect(() => {
@@ -55,10 +71,23 @@ export default function ReportsPage() {
 
       const { data: tradesData } = await supabase
         .from('trades')
-        .select('*, wallets(name)')
+        .select('*, wallets(name, initial_balance)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
+      // Load risk settings from localStorage
+      const riskSettings: Record<string, any> = {};
+      if (typeof window !== 'undefined' && walletsData) {
+        walletsData.forEach((w: any) => {
+          const saved = localStorage.getItem(`risk_settings_${w.id}`);
+          if (saved) {
+            try {
+              riskSettings[w.id] = JSON.parse(saved);
+            } catch (e) {}
+          }
+        });
+      }
+      setWalletRiskSettings(riskSettings);
       setTrades(tradesData || []);
       setLoading(false);
     };
@@ -69,7 +98,15 @@ export default function ReportsPage() {
   const filteredTrades = useMemo(() => {
     return trades.filter(trade => {
       const matchWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
-      const matchMarket = filterMarket === 'all' || trade.market === filterMarket;
+      const tradeMarket = trade.wallets?.name || 'B3';
+      const matchMarket = filterMarket === 'all' || tradeMarket.toUpperCase().includes(filterMarket.toUpperCase());
+      const tradeEmotion = trade.mental_state || 'NEUTRO';
+      const matchEmotion = filterEmotion === 'all' || tradeEmotion.toUpperCase() === filterEmotion.toUpperCase();
+      
+      const sleepMatch = trade.notes?.match(/\[Sono: (.*?)h\]/);
+      const hours = sleepMatch ? parseFloat(sleepMatch[1]) : 0;
+      const range = hours === 0 ? 'N/A' : hours < 6 ? '< 6h' : hours <= 8 ? '6-8h' : '> 8h';
+      const matchSleep = filterSleep === 'all' || range === filterSleep;
       
       let matchDate = true;
       const tradeDate = new Date(trade.entry_time || trade.created_at);
@@ -83,9 +120,9 @@ export default function ReportsPage() {
         matchDate = isWithinInterval(tradeDate, { start: startOfMonth(now), end: endOfMonth(now) });
       }
 
-      return matchWallet && matchMarket && matchDate;
+      return matchWallet && matchMarket && matchEmotion && matchSleep && matchDate;
     });
-  }, [trades, filterWallet, filterMarket, dateRange]);
+  }, [trades, filterWallet, filterMarket, filterEmotion, filterSleep, dateRange]);
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
@@ -188,16 +225,130 @@ export default function ReportsPage() {
       return acc;
     }, {});
 
-    // Mental State
+    // Mental State Ranking
     const mentalStats = filteredTrades.reduce((acc: any, t) => {
-      const state = t.mental_state || 'Neutro';
-      if (!acc[state]) acc[state] = { win: 0, loss: 0 };
-      if (t.status === 'WIN') acc[state].win++;
-      if (t.status === 'LOSS') acc[state].loss++;
+      const state = t.mental_state || 'NEUTRO';
+      if (!acc[state]) acc[state] = 0;
+      acc[state]++;
       return acc;
     }, {});
 
-    const dominantMentalState = Object.entries(mentalStats).sort((a: any, b: any) => (b[1].win + b[1].loss) - (a[1].win + a[1].loss))[0]?.[0] || 'N/A';
+    const psychologyRanking = Object.entries(mentalStats)
+      .map(([name, count]: [string, any]) => ({
+        name,
+        count,
+        percentage: (count / total) * 100
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+
+    const dominantMentalState = psychologyRanking[0]?.name || 'N/A';
+
+    // Discipline Analysis
+    const outOfPlanTrades: any[] = [];
+    let inPlanCount = 0;
+
+    filteredTrades.forEach(t => {
+      const settings = walletRiskSettings[t.wallet_id];
+      const targetRR = settings?.target_rr ? parseFloat(settings.target_rr) : 0;
+      const targetRiskPercent = settings?.risk_per_trade_percent ? parseFloat(settings.risk_per_trade_percent) : 1;
+      
+      // Parse risk from notes
+      const notes = t.notes || '';
+      const slMatch = notes.match(/\[SL: (.*?)\]/);
+      const contractSizeMatch = notes.match(/\[Contract Size: (.*?)\]/);
+      const multiplierMatch = notes.match(/\[Multiplicador: (.*?)\]/);
+      
+      const sl = slMatch ? parseFloat(slMatch[1]) : 0;
+      const contractSize = contractSizeMatch ? parseFloat(contractSizeMatch[1]) : 1;
+      const multiplier = multiplierMatch ? parseFloat(multiplierMatch[1]) : 1;
+      
+      let risk = 0;
+      let rr = 0;
+      if (t.entry_price && t.quantity) {
+        risk = sl ? Math.abs(t.entry_price - sl) * contractSize * t.quantity * multiplier : 0;
+        const tpMatch = notes.match(/\[TP: (.*?)\]/);
+        const tp = tpMatch ? parseFloat(tpMatch[1]) : 0;
+        const reward = tp ? Math.abs(tp - t.entry_price) * contractSize * t.quantity * multiplier : 0;
+        rr = risk > 0 ? reward / risk : 0;
+      }
+
+      // Calculate risk percentage based on wallet initial balance (as a baseline for the report)
+      const walletInitialBalance = t.wallets?.initial_balance || 0;
+      const riskPercent = walletInitialBalance > 0 ? (risk / walletInitialBalance) * 100 : 0;
+
+      const rrDiff = targetRR > 0 ? Math.abs(rr - targetRR) : 0;
+      const isRRViolated = targetRR > 0 && rrDiff > 0.05;
+      const isRiskViolated = riskPercent > targetRiskPercent;
+
+      if (isRRViolated || isRiskViolated) {
+        outOfPlanTrades.push({
+          ...t,
+          violations: [
+            isRRViolated ? `R:R (Alvo: 1:${targetRR.toFixed(2)}, Exec: 1:${rr.toFixed(2)})` : null,
+            isRiskViolated ? `Risco % (Alvo: ${targetRiskPercent}%, Exec: ${riskPercent.toFixed(2)}%)` : null
+          ].filter(Boolean)
+        });
+      } else {
+        inPlanCount++;
+      }
+    });
+
+    const disciplinePercentage = total > 0 ? (inPlanCount / total) * 100 : 100;
+
+    // Habit Analysis (Sleep & Emotion)
+    const emotionPerformance = filteredTrades.reduce((acc: any, t) => {
+      const emotion = t.mental_state || 'NEUTRO';
+      if (!acc[emotion]) acc[emotion] = { name: emotion, profit: 0, count: 0, wins: 0 };
+      acc[emotion].profit += (t.net_profit || 0);
+      acc[emotion].count += 1;
+      if (t.status === 'WIN') acc[emotion].wins += 1;
+      return acc;
+    }, {});
+
+    const sleepPerformance = filteredTrades.reduce((acc: any, t) => {
+      const match = t.notes?.match(/\[Sono: (.*?)h\]/);
+      const hours = match ? parseFloat(match[1]) : 0;
+      const range = hours === 0 ? 'N/A' : hours < 6 ? '< 6h' : hours <= 8 ? '6-8h' : '> 8h';
+      
+      if (!acc[range]) acc[range] = { name: range, profit: 0, count: 0, wins: 0, avgHours: 0, totalHours: 0 };
+      acc[range].profit += (t.net_profit || 0);
+      acc[range].count += 1;
+      acc[range].totalHours += hours;
+      if (t.status === 'WIN') acc[range].wins += 1;
+      return acc;
+    }, {});
+
+    const emotionChartData = Object.values(emotionPerformance).map((e: any) => ({
+      ...e,
+      winRate: (e.wins / e.count) * 100
+    }));
+
+    const sleepChartData = Object.values(sleepPerformance).map((s: any) => ({
+      ...s,
+      winRate: (s.wins / s.count) * 100
+    })).sort((a, b) => {
+      const order = { 'N/A': 0, '< 6h': 1, '6-8h': 2, '> 8h': 3 };
+      return (order[a.name as keyof typeof order] || 0) - (order[b.name as keyof typeof order] || 0);
+    });
+
+    // Insights Generation
+    const riskViolations = outOfPlanTrades.filter(t => t.violations.some((v: string) => v.includes('Risco %'))).length;
+    const rrViolations = outOfPlanTrades.filter(t => t.violations.some((v: string) => v.includes('R:R'))).length;
+    
+    const riskControl = total > 0 && riskViolations === 0 ? 'Risco perfeitamente controlado' : 
+                        riskViolations <= total * 0.1 ? 'Risco bem controlado na maioria das operações' : 
+                        'Atenção: Falhas frequentes no controle de risco';
+
+    const executionClean = total > 0 && rrViolations === 0 ? 'Execução limpa e fiel aos alvos' : 
+                           rrViolations <= total * 0.1 ? 'Boa execução com pequenos desvios de alvo' : 
+                           'Atenção: Execução frequentemente fora dos alvos planejados';
+
+    const bestSleep = [...sleepChartData].filter(s => s.name !== 'N/A' && s.count >= 2).sort((a, b) => b.winRate - a.winRate)[0];
+    const sleepInsight = bestSleep ? `Melhor performance com ${bestSleep.name} de sono (${bestSleep.winRate.toFixed(0)}% de acerto)` : 'Dados de sono insuficientes para conclusão';
+
+    const bestEmotion = [...emotionChartData].filter(e => e.count >= 2).sort((a, b) => b.winRate - a.winRate)[0];
+    const emotionInsight = bestEmotion ? `Maior taxa de acerto operando no estado: ${bestEmotion.name} (${bestEmotion.winRate.toFixed(0)}%)` : 'Dados emocionais insuficientes para conclusão';
 
     return {
       total,
@@ -218,30 +369,46 @@ export default function ReportsPage() {
       bestExitHours,
       sortedSessions,
       triggerStats,
-      dominantMentalState
+      dominantMentalState,
+      psychologyRanking,
+      disciplinePercentage,
+      outOfPlanTrades,
+      emotionChartData,
+      sleepChartData,
+      insights: {
+        riskControl,
+        executionClean,
+        sleepInsight,
+        emotionInsight
+      }
     };
-  }, [filteredTrades, triggers]);
+  }, [filteredTrades, triggers, walletRiskSettings]);
 
   const handleExportPDF = async () => {
     if (!reportRef.current) return;
     setExporting(true);
     
     try {
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#050A15',
-        logging: false,
+      const dataUrl = await domtoimage.toPng(reportRef.current, {
+        bgcolor: '#050A15',
+        quality: 1,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'px',
-        format: [canvas.width, canvas.height]
+        format: [img.width, img.height]
       });
       
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
       pdf.save(`relatorio-performance-${format(new Date(), 'dd-MM-yyyy')}.pdf`);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
@@ -261,26 +428,26 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => router.back()}
-            className="p-2 bg-[#0D1425] border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
-              <FileText className="w-6 h-6 text-blue-500" />
-              Relatório de Performance
-            </h1>
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
-              Análise detalhada dos seus resultados operacionais
-            </p>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => router.back()}
+              className="p-2 bg-[#0D1425] border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
+                <FileText className="w-6 h-6 text-blue-500" />
+                Relatório de Performance
+              </h1>
+              <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
+                Análise detalhada dos seus resultados operacionais
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-3 items-center">
           <button
             onClick={handleExportPDF}
             disabled={exporting || stats.total === 0}
@@ -293,13 +460,13 @@ export default function ReportsPage() {
             )}
             {exporting ? 'Exportando...' : 'Exportar PDF'}
           </button>
+        </div>
 
-          <div className="h-8 w-px bg-slate-800 mx-1 hidden md:block" />
-
+        <div className="flex flex-wrap gap-3 items-center bg-[#0D1425] p-4 rounded-2xl border border-slate-800/50">
           <select
             value={filterWallet}
             onChange={(e) => setFilterWallet(e.target.value)}
-            className="bg-[#0D1425] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todas as Carteiras</option>
             {wallets.map(w => (
@@ -310,7 +477,7 @@ export default function ReportsPage() {
           <select
             value={filterMarket}
             onChange={(e) => setFilterMarket(e.target.value)}
-            className="bg-[#0D1425] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todos os Mercados</option>
             <option value="B3">B3</option>
@@ -319,9 +486,38 @@ export default function ReportsPage() {
           </select>
 
           <select
+            value={filterEmotion}
+            onChange={(e) => setFilterEmotion(e.target.value)}
+            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">Todas as Emoções</option>
+            <option value="CALMO">Calmo</option>
+            <option value="ANSIOSO">Ansioso</option>
+            <option value="CANSADO">Cansado</option>
+            <option value="EUFORICO">Eufórico</option>
+            <option value="NEUTRO">Neutro</option>
+            <option value="CONFIANTE">Confiante</option>
+            <option value="IRRITADO">Irritado</option>
+            <option value="INSEGURO">Inseguro</option>
+            <option value="STRESSED">Stressed</option>
+          </select>
+
+          <select
+            value={filterSleep}
+            onChange={(e) => setFilterSleep(e.target.value)}
+            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">Todo o Sono</option>
+            <option value="< 6h">&lt; 6h de Sono</option>
+            <option value="6-8h">6-8h de Sono</option>
+            <option value="> 8h">&gt; 8h de Sono</option>
+            <option value="N/A">Sem Registro</option>
+          </select>
+
+          <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="bg-[#0D1425] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
           >
             <option value="month">Este Mês</option>
             <option value="7d">Últimos 7 Dias</option>
@@ -398,16 +594,59 @@ export default function ReportsPage() {
                 <Brain className="w-4 h-4 text-purple-500" />
                 Psicologia & Disciplina
               </h2>
-              <ul className="space-y-4 text-sm">
-                <li className="flex justify-between items-center p-3 bg-[#050A15] rounded-xl border border-slate-800/50">
-                  <span className="text-slate-400">Sentimento Dominante:</span>
-                  <span className="font-bold text-purple-400 uppercase text-xs tracking-widest px-2 py-1 bg-purple-500/10 rounded">{stats.dominantMentalState}</span>
-                </li>
-                <li className="flex justify-between items-center p-3 bg-[#050A15] rounded-xl border border-slate-800/50">
-                  <span className="text-slate-400">Disciplina do Plano:</span>
-                  <span className="font-bold text-emerald-500">100%</span>
-                </li>
-              </ul>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Ranking de Sentimentos:</h3>
+                  <div className="space-y-2">
+                    {stats.psychologyRanking.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400 flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-purple-500" />
+                          {item.name}
+                        </span>
+                        <span className="font-bold text-white">{item.percentage.toFixed(0)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800/50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disciplina do Plano:</h3>
+                    <span className={`text-sm font-bold ${stats.disciplinePercentage >= 90 ? 'text-emerald-500' : stats.disciplinePercentage >= 70 ? 'text-yellow-500' : 'text-red-500'}`}>
+                      {stats.disciplinePercentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${stats.disciplinePercentage >= 90 ? 'bg-emerald-500' : stats.disciplinePercentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                      style={{ width: `${stats.disciplinePercentage}%` }} 
+                    />
+                  </div>
+                </div>
+
+                {stats.outOfPlanTrades.length > 0 && (
+                  <div className="pt-4 border-t border-slate-800/50">
+                    <h3 className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-3">Fora do Plano ({stats.outOfPlanTrades.length}):</h3>
+                    <div className="max-h-[150px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {stats.outOfPlanTrades.map((trade: any, idx: number) => (
+                        <div key={idx} className="p-2 bg-red-500/5 border border-red-500/10 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-bold text-white">{trade.asset}</span>
+                            <span className="text-[8px] text-slate-500">{new Date(trade.created_at).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                          <div className="space-y-0.5">
+                            {trade.violations.map((v: string, i: number) => (
+                              <p key={i} className="text-[9px] text-red-400 leading-tight">• {v}</p>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -545,22 +784,144 @@ export default function ReportsPage() {
               
               <ul className="space-y-3 text-sm text-slate-400">
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {stats.winRate >= 60 ? 'Boa consistência' : 'Consistência em desenvolvimento'}
+                  <div className={`w-1.5 h-1.5 rounded-full ${stats.winRate >= 60 ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                  {stats.winRate >= 60 ? 'Boa consistência (Win Rate > 60%)' : 'Consistência em desenvolvimento'}
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Risco controlado
+                  <div className={`w-1.5 h-1.5 rounded-full ${stats.insights.riskControl.includes('Atenção') ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                  {stats.insights.riskControl}
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Execução limpa
+                  <div className={`w-1.5 h-1.5 rounded-full ${stats.insights.executionClean.includes('Atenção') ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                  {stats.insights.executionClean}
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Respeito absoluto ao plano
+                  <div className={`w-1.5 h-1.5 rounded-full ${stats.disciplinePercentage >= 90 ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
+                  {stats.disciplinePercentage >= 95 ? 'Respeito absoluto ao plano' : 
+                   stats.disciplinePercentage >= 80 ? 'Bom respeito ao plano' : 
+                   'Necessita maior disciplina operacional'}
                 </li>
               </ul>
+              
+              <div className="mt-6 pt-4 border-t border-slate-800/50 space-y-3">
+                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Insights de Hábitos:</h3>
+                <p className="text-xs text-slate-300 flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">💡</span>
+                  {stats.insights.sleepInsight}
+                </p>
+                <p className="text-xs text-slate-300 flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">💡</span>
+                  {stats.insights.emotionInsight}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Nova Seção: Análise de Hábitos */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
+              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+                <Brain className="w-4 h-4 text-purple-500" />
+                Performance por Estado Emocional
+              </h2>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={stats.emotionChartData}
+                    onClick={(data) => {
+                      if (data && data.activeLabel) {
+                        setFilterEmotion(data.activeLabel === filterEmotion ? 'all' : data.activeLabel);
+                      }
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0D1425', border: '1px solid #1e293b', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '12px' }}
+                    />
+                    <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                      {stats.emotionChartData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                {stats.emotionChartData.map((e: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-500 uppercase tracking-wider">{e.name}</span>
+                    <span className="font-bold text-white">{e.winRate.toFixed(1)}% WR</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
+              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+                <Clock className="w-4 h-4 text-blue-500" />
+                Performance por Horas de Sono
+              </h2>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={stats.sleepChartData}
+                    onClick={(data) => {
+                      if (data && data.activeLabel) {
+                        setFilterSleep(data.activeLabel === filterSleep ? 'all' : data.activeLabel);
+                      }
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0D1425', border: '1px solid #1e293b', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '12px' }}
+                    />
+                    <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                      {stats.sleepChartData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#3b82f6' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                {stats.sleepChartData.map((s: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-500 uppercase tracking-wider">{s.name}</span>
+                    <span className="font-bold text-white">{s.winRate.toFixed(1)}% WR</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

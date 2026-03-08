@@ -116,7 +116,7 @@ export default function WalletsPage() {
       .from('wallets')
       .insert({
         user_id: user.id,
-        name: newWallet.name,
+        name: newWallet.name.toUpperCase(),
         initial_balance: parseNumber(newWallet.initial_balance),
         meta_value: parseNumber(newWallet.meta_value)
       })
@@ -195,7 +195,7 @@ export default function WalletsPage() {
     const { error } = await supabase
       .from('wallets')
       .update({
-        name: editingWallet.name,
+        name: editingWallet.name.toUpperCase(),
         initial_balance: parseNumber(editingWallet.initial_balance),
         meta_value: parseNumber(editingWallet.meta_value)
       })
@@ -362,11 +362,11 @@ export default function WalletsPage() {
               type="text" 
               value={isEditModalOpen ? editingWallet?.name : newWallet.name}
               onChange={(e) => isEditModalOpen 
-                ? setEditingWallet({...editingWallet, name: e.target.value})
-                : setNewWallet({...newWallet, name: e.target.value})
+                ? setEditingWallet({...editingWallet, name: e.target.value.toUpperCase()})
+                : setNewWallet({...newWallet, name: e.target.value.toUpperCase()})
               }
-              placeholder="Ex: B3, Forex, Crypto"
-              className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              placeholder="Ex: B3, FOREX, CRYPTO"
+              className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white uppercase focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
           <div className="space-y-1.5">

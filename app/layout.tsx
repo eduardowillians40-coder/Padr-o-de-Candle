@@ -15,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Padrão 3 Candles | Trading Journal',
+  title: 'TACTICAL EYE | Trading Journal',
   description: 'Seu diário de trade profissional para análise de performance e estratégias.',
 };
 

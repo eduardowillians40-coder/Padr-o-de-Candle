@@ -34,6 +34,8 @@ function DashboardContent() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const selectedWallet = searchParams.get('wallet');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -79,6 +81,13 @@ function DashboardContent() {
         
       if (selectedWallet) {
         tradesQuery = tradesQuery.eq('wallet_id', selectedWallet);
+      }
+
+      if (startDate) {
+        tradesQuery = tradesQuery.gte('created_at', `${startDate}T00:00:00Z`);
+      }
+      if (endDate) {
+        tradesQuery = tradesQuery.lte('created_at', `${endDate}T23:59:59Z`);
       }
       
       const { data: trades } = await tradesQuery;
@@ -174,7 +183,7 @@ function DashboardContent() {
     };
 
     fetchDashboardData();
-  }, [supabase, refresh, selectedWallet]);
+  }, [supabase, refresh, selectedWallet, startDate, endDate]);
 
   if (loading) {
     return (
@@ -302,7 +311,6 @@ function DashboardContent() {
             <Target className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-3xl font-display font-bold text-blue-500">{stats.winRate.toFixed(1)}%</p>
-          <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">VS PERÍODO ANTERIOR</p>
           <div className="h-1 w-full bg-slate-800 rounded-full mt-4 overflow-hidden">
             <div className="h-full bg-blue-500" style={{ width: `${stats.winRate}%` }} />
           </div>
@@ -321,7 +329,6 @@ function DashboardContent() {
             <BarChart3 className="w-4 h-4 text-amber-500" />
           </div>
           <p className="text-3xl font-display font-bold text-amber-500">{stats.rr.toFixed(2)}</p>
-          <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">VS PERÍODO ANTERIOR</p>
           <div className="h-1 w-full bg-slate-800 rounded-full mt-4 overflow-hidden">
             <div className="h-full bg-amber-500" style={{ width: '100%' }} />
           </div>
@@ -340,7 +347,6 @@ function DashboardContent() {
             <TrendingDown className="w-4 h-4 text-red-500" />
           </div>
           <p className="text-3xl font-display font-bold text-red-500">{stats.drawdown.toFixed(2)}%</p>
-          <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">VS PERÍODO ANTERIOR</p>
           <div className="h-1 w-full bg-slate-800 rounded-full mt-4 overflow-hidden">
             <div className="h-full bg-red-500" style={{ width: '20%' }} />
           </div>

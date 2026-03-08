@@ -25,6 +25,16 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (preferences.theme === 'light') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+    }
+  }, [preferences.theme]);
+
+  useEffect(() => {
     const fetchPreferences = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

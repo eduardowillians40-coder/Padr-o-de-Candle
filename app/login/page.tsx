@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LogIn, Lock, Mail, ArrowRight, CandlestickChart, Info } from 'lucide-react';
+import { LogIn, Lock, Mail, ArrowRight, Eye, BarChart3, Info } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 
@@ -52,11 +52,14 @@ function LoginContent() {
         className="mb-8 text-center"
       >
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-blue-600/20 p-3 rounded-xl border border-blue-500/30">
-            <CandlestickChart className="w-8 h-8 text-blue-500" />
+          <div className="bg-white rounded-2xl shrink-0 relative flex items-center justify-center w-16 h-16 shadow-2xl overflow-hidden">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#0D1425] to-[#050A15] rounded-full flex items-center justify-center relative shadow-inner">
+              <Eye className="w-8 h-8 text-emerald-400 absolute" strokeWidth={1.5} />
+              <BarChart3 className="w-4 h-4 text-blue-400 absolute mt-1" strokeWidth={3} />
+            </div>
           </div>
         </div>
-        <h1 className="text-3xl font-display font-bold tracking-tight text-white">PADRÃO 3 CANDLES</h1>
+        <h1 className="text-3xl font-display font-bold tracking-tight text-white uppercase">TACTICAL EYE</h1>
         <div className="h-1 w-12 bg-blue-500 mx-auto mt-2 rounded-full" />
       </motion.div>
 

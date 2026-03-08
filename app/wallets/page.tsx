@@ -32,7 +32,8 @@ export default function WalletsPage() {
       risk_per_trade_percent: '',
       max_trades_per_day: '',
       max_consecutive_losses: '',
-      max_losses_per_week: ''
+      max_losses_per_week: '',
+      target_rr: ''
     }
   });
 
@@ -134,7 +135,8 @@ export default function WalletsPage() {
           risk_per_trade_percent: '',
           max_trades_per_day: '',
           max_consecutive_losses: '',
-          max_losses_per_week: ''
+          max_losses_per_week: '',
+          target_rr: ''
         }
       });
       setRefresh(prev => prev + 1);
@@ -165,7 +167,8 @@ export default function WalletsPage() {
       risk_per_trade_percent: '',
       max_trades_per_day: '',
       max_consecutive_losses: '',
-      max_losses_per_week: ''
+      max_losses_per_week: '',
+      target_rr: ''
     };
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(`risk_settings_${wallet.id}`);
@@ -324,6 +327,20 @@ export default function WalletsPage() {
               </div>
 
               <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 text-[10px] font-bold">
+                <span className="text-slate-500 uppercase">Risco de Retorno Alvo</span>
+                <span className="text-blue-500">1 : {(() => {
+                  try {
+                    const saved = localStorage.getItem(`risk_settings_${wallet.id}`);
+                    if (saved) {
+                      const settings = JSON.parse(saved);
+                      return settings.target_rr || '0.00';
+                    }
+                  } catch (e) {}
+                  return '0.00';
+                })()}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 text-[10px] font-bold">
                 <span className="text-slate-500 uppercase">Meta</span>
                 <span className="text-blue-500">{formatCurrency(wallet.meta_value, preferences.currency)}</span>
               </div>
@@ -435,6 +452,20 @@ export default function WalletsPage() {
                     : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, max_losses_per_week: e.target.value}})
                   }
                   placeholder="Ex: 5"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco de Retorno Alvo (RR)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={isEditModalOpen ? editingWallet?.risk_settings?.target_rr : newWallet.risk_settings.target_rr}
+                  onChange={(e) => isEditModalOpen 
+                    ? setEditingWallet({...editingWallet, risk_settings: {...editingWallet.risk_settings, target_rr: e.target.value}})
+                    : setNewWallet({...newWallet, risk_settings: {...newWallet.risk_settings, target_rr: e.target.value}})
+                  }
+                  placeholder="Ex: 2.5"
                   className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>

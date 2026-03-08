@@ -53,6 +53,7 @@ export default function OperationsPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [trades, setTrades] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
+  const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, any>>({});
   const [triggers, setTriggers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -104,6 +105,20 @@ export default function OperationsPage() {
         .eq('user_id', user.id);
       setWallets(walletsData || []);
 
+      // Load risk settings from localStorage for all wallets
+      if (typeof window !== 'undefined' && walletsData) {
+        const settings: Record<string, any> = {};
+        walletsData.forEach(w => {
+          const saved = localStorage.getItem(`risk_settings_${w.id}`);
+          if (saved) {
+            try {
+              settings[w.id] = JSON.parse(saved);
+            } catch (e) {}
+          }
+        });
+        setWalletRiskSettings(settings);
+      }
+
       // Buscar gatilhos
       const { data: triggersData } = await supabase
         .from('triggers')
@@ -131,7 +146,30 @@ export default function OperationsPage() {
   }, [supabase, refresh, walletId]);
 
   // Lógica de filtragem robusta
-  const filteredTrades = trades.filter(trade => {
+  const filteredTrades = trades.map(trade => {
+    // Parse extra data from notes
+    const notes = trade.notes || '';
+    const slMatch = notes.match(/\[SL: (.*?)\]/);
+    const tpMatch = notes.match(/\[TP: (.*?)\]/);
+    const sleepMatch = notes.match(/\[Sono: (.*?)h\]/);
+    const contractSizeMatch = notes.match(/\[Contract Size: (.*?)\]/);
+    const multiplierMatch = notes.match(/\[Multiplicador: (.*?)\]/);
+
+    const sl = slMatch ? parseFloat(slMatch[1]) : 0;
+    const tp = tpMatch ? parseFloat(tpMatch[1]) : 0;
+    const sleep = sleepMatch ? sleepMatch[1] : null;
+    const contractSize = contractSizeMatch ? parseFloat(contractSizeMatch[1]) : 1;
+    const multiplier = multiplierMatch ? parseFloat(multiplierMatch[1]) : 1;
+
+    let rr = 0;
+    if (trade.entry_price && trade.quantity) {
+      const risk = sl ? Math.abs(trade.entry_price - sl) * contractSize * trade.quantity * multiplier : 0;
+      const reward = tp ? Math.abs(tp - trade.entry_price) * contractSize * trade.quantity * multiplier : 0;
+      rr = risk > 0 ? reward / risk : 0;
+    }
+
+    return { ...trade, sl, tp, sleep, rr };
+  }).filter(trade => {
     const matchesWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
     const matchesAsset = filterAsset === '' || (trade.asset && trade.asset.toLowerCase().includes(filterAsset.toLowerCase()));
     const matchesType = filterType === 'all' || (filterType === 'LONG' ? trade.type === 'BUY' : trade.type === 'SELL');
@@ -358,11 +396,13 @@ export default function OperationsPage() {
               {filteredTrades.map((trade) => (
                 <div key={trade.id} className="bg-[#0D1425] border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-slate-600 transition-colors">
                   <div className="flex items-start md:items-center gap-4 w-full md:w-auto">
-                    <div className={`p-3 rounded-lg shrink-0 ${trade.type === 'BUY' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                      {trade.type === 'BUY' ? (
-                        <ArrowUpRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
+                    <div className={`p-3 rounded-lg shrink-0 ${trade.status === 'WIN' ? 'bg-emerald-500/10' : trade.status === 'LOSS' ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
+                      {trade.status === 'WIN' ? (
+                        <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      ) : trade.status === 'LOSS' ? (
+                        <TrendingDown className="w-5 h-5 text-red-500" />
                       ) : (
-                        <ArrowDownRight className={`w-5 h-5 ${trade.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'}`} />
+                        <Target className="w-5 h-5 text-blue-500" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -371,9 +411,41 @@ export default function OperationsPage() {
                         <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${trade.type === 'BUY' ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400'}`}>
                           {trade.type === 'BUY' ? 'Long' : 'Short'}
                         </span>
+                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
+                          trade.status === 'WIN' ? 'bg-emerald-500/10 text-emerald-500' :
+                          trade.status === 'LOSS' ? 'bg-red-500/10 text-red-500' :
+                          'bg-blue-500/10 text-blue-500'
+                        }`}>
+                          {trade.status === 'BE' ? 'Break Even' : trade.status}
+                        </span>
+                        {trade.rr > 0 && (
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${(() => {
+                            const settings = walletRiskSettings[trade.wallet_id];
+                            const targetRR = settings?.target_rr ? parseFloat(settings.target_rr) : 0;
+                            if (targetRR === 0) return 'bg-blue-500/10 text-blue-400';
+                            return Math.abs(trade.rr - targetRR) < 0.01 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-yellow-500/10 text-yellow-500';
+                          })()}`}>
+                            R:R 1:{trade.rr.toFixed(2)}
+                          </span>
+                        )}
+                        {trade.sleep && (
+                          <span className="text-[10px] font-bold text-indigo-400 uppercase bg-indigo-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+                            <Clock className="w-2 h-2" />
+                            {trade.sleep}h Sono
+                          </span>
+                        )}
                         <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
                           {trade.mental_state || 'Neutro'}
                         </span>
+                        {trade.strategy === 'REGRA DOS 3 TIMES' ? (
+                          <Link href="/strategies/regra-dos-3-times" className="text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase bg-blue-500/10 px-1.5 py-0.5 rounded shrink-0 transition-colors">
+                            {trade.strategy}
+                          </Link>
+                        ) : trade.strategy && (
+                          <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
+                            {trade.strategy}
+                          </span>
+                        )}
                         {trade.trigger_id && (
                           <span className="text-[10px] font-bold text-amber-500 uppercase bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
                             <Zap className="w-2 h-2" />

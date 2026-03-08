@@ -17,7 +17,8 @@ import {
   Moon,
   Plus,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -129,8 +130,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }, [router, supabase]);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+    if (mobileMenuOpen) {
+      const timer = setTimeout(() => {
+        setMobileMenuOpen(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, mobileMenuOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -166,6 +172,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Carteiras', icon: Wallet, href: '/wallets' },
     { name: 'Operações', icon: History, href: '/operations' },
     { name: 'Ferramentas', icon: Wrench, href: '/tools', subItems: [
+      { name: 'Regra dos 3 Times', href: '/tools/regra-3-times' },
       { name: 'Estratégias de Liquidez', href: '/tools/liquidity' },
       { name: 'Estratégia de Order Block', href: '/tools/order-block' },
       { name: 'Estratégia de ChoCH & SMC', href: '/tools/smc' },
@@ -176,6 +183,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       // Estratégias Dinâmicas
       ...strategies.map(s => ({ name: s.name, href: `/tools/strategies/${s.id}` })),
     ]},
+    { name: 'Relatórios', icon: FileText, href: '/reports' },
     { name: 'Configurações', icon: Settings, href: '/settings' },
   ];
 

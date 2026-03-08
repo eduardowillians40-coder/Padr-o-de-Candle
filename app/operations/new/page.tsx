@@ -29,6 +29,40 @@ const STANDARD_TRIGGERS = [
   'Volume Climático'
 ];
 
+const MARKET_ASSETS: Record<string, string[]> = {
+  FOREX: [
+    'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'EURBRL', 'USDCAD', 'USDBRL', 'USDCHF', 'NZDUSD', 'EURJPY', 'EURGBP', 'CADJPY', 'XAUUSD', 'XAGUSD', 'USOIL', 'UKOIL', 'US30', 'NAS100'
+  ],
+  CRYPTO: [
+    'BTCUSD', 'ETHUSD', 'USDTUSD', 'BNBUSD', 'XRPUSD', 'USDCUSD', 'SOLUSD', 'TRXUSD', 'DOGEUSD', 'ADAUSD'
+  ],
+  B3: [
+    'WIN', 'WDO', 'IBOV', 'PETR4', 'VALE3', 'ITUB4', 'BBDC4'
+  ]
+};
+
+const ASSET_CONFIG: Record<string, { size: number }> = {
+  // FOREX (100000)
+  EURUSD: { size: 100000 }, GBPUSD: { size: 100000 }, USDJPY: { size: 100000 },
+  AUDUSD: { size: 100000 }, USDCAD: { size: 100000 }, USDCHF: { size: 100000 },
+  NZDUSD: { size: 100000 }, EURGBP: { size: 100000 }, EURJPY: { size: 100000 },
+  GBPJPY: { size: 100000 }, AUDJPY: { size: 100000 }, CADJPY: { size: 100000 },
+  CHFJPY: { size: 100000 }, NZDJPY: { size: 100000 }, EURBRL: { size: 100000 },
+  USDBRL: { size: 100000 },
+  // METALS
+  XAUUSD: { size: 100 }, XAGUSD: { size: 5000 }, XPTUSD: { size: 50 }, XPDUSD: { size: 100 },
+  // CRYPTO
+  BTCUSD: { size: 1 }, ETHUSD: { size: 1 }, BNBUSD: { size: 1 }, SOLUSD: { size: 1 },
+  XRPUSD: { size: 1 }, DOGEUSD: { size: 1 }, ADAUSD: { size: 1 }, USDTUSD: { size: 1 },
+  USDCUSD: { size: 1 }, TRXUSD: { size: 1 },
+  // INDICES
+  US30: { size: 1 }, NAS100: { size: 1 }, SPX500: { size: 1 }, GER40: { size: 1 },
+  // OIL
+  USOIL: { size: 1000 }, UKOIL: { size: 1000 },
+  // B3
+  WIN: { size: 0.2 }, WDO: { size: 10 },
+};
+
 function NewOperationForm() {
   const { preferences } = useUserPreferences();
   const router = useRouter();
@@ -41,7 +75,7 @@ function NewOperationForm() {
   const [triggers, setTriggers] = useState<any[]>([]);
   const [userStrategies, setUserStrategies] = useState<any[]>([]);
   const [riskSettings, setRiskSettings] = useState<any>(null);
-  const [walletStats, setWalletStats] = useState<any>({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0 });
+  const [walletStats, setWalletStats] = useState<any>({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0, currentBalance: 0 });
   
   const [formData, setFormData] = useState({
     wallet_id: '',
@@ -68,6 +102,11 @@ function NewOperationForm() {
     mental_state: 'NEUTRO',
     notes: '',
     fees: '0',
+    sleep_hours: '',
+    multiplier: '1',
+    contract_size: '1',
+    stop_loss: '',
+    take_profit: '',
     print_before: '',
     print_after: ''
   });
@@ -89,14 +128,27 @@ function NewOperationForm() {
       if (isEditMode && tradeId) {
         const { data: tradeData } = await supabase.from('trades').select('*').eq('id', tradeId).single();
         if (tradeData) {
-          // Parse session from notes if exists
-          let session = 'None';
           let notes = tradeData.notes || '';
-          const sessionMatch = notes.match(/^\[Sessão: (.*?)\]\n/);
-          if (sessionMatch) {
-            session = sessionMatch[1];
-            notes = notes.replace(/^\[Sessão: (.*?)\]\n/, '');
-          }
+          
+          // Helper to extract and remove tags from notes
+          const extractTag = (regex: RegExp) => {
+            const match = notes.match(regex);
+            if (match) {
+              notes = notes.replace(regex, '');
+              return match[1];
+            }
+            return null;
+          };
+
+          const session = extractTag(/\[Sessão: (.*?)\]\n?/) || 'None';
+          const multiplier = extractTag(/\[Multiplicador: (.*?)\]\n?/) || '1';
+          const sleepHours = extractTag(/\[Sono: (.*?)h\]\n?/) || '';
+          const contractSize = extractTag(/\[Contract Size: (.*?)\]\n?/) || '1';
+          const stopLoss = extractTag(/\[SL: (.*?)\]\n?/) || '';
+          const takeProfit = extractTag(/\[TP: (.*?)\]\n?/) || '';
+          
+          // Clean up any remaining management tags if needed
+          notes = notes.replace(/\[Gestão de Risco:.*?\]\n?/, '');
 
           setFormData({
             wallet_id: tradeData.wallet_id || '',
@@ -113,8 +165,13 @@ function NewOperationForm() {
             strategy: tradeData.strategy || '',
             trigger_id: tradeData.trigger_id || '',
             mental_state: tradeData.mental_state || 'NEUTRO',
-            notes: notes,
+            notes: notes.trim(),
             fees: tradeData.fees?.toString() || '0',
+            sleep_hours: sleepHours,
+            multiplier: multiplier,
+            contract_size: contractSize,
+            stop_loss: stopLoss,
+            take_profit: takeProfit,
             print_before: tradeData.print_before || '',
             print_after: tradeData.print_after || ''
           });
@@ -159,9 +216,8 @@ function NewOperationForm() {
 
         const { data: trades } = await supabase
           .from('trades')
-          .select('status, created_at')
+          .select('status, created_at, net_profit')
           .eq('wallet_id', formData.wallet_id)
-          .gte('created_at', startOfWeekIso)
           .order('created_at', { ascending: false });
 
         if (trades) {
@@ -171,15 +227,21 @@ function NewOperationForm() {
           let consecutiveLosses = 0;
           for (const t of trades) {
             if (t.status === 'LOSS') consecutiveLosses++;
-            else break;
+            else if (t.status === 'WIN' || t.status === 'BE') break;
           }
 
-          const weeklyLosses = trades.filter((t: any) => t.status === 'LOSS').length;
+          const weeklyLosses = trades.filter((t: any) => t.created_at >= startOfWeekIso && t.status === 'LOSS').length;
+
+          const selectedWallet = wallets.find(w => w.id === formData.wallet_id);
+          const initialBalance = Number(selectedWallet?.initial_balance) || 0;
+          const netProfit = trades.reduce((acc: number, t: any) => acc + (Number(t.net_profit) || 0), 0);
+          const currentBalance = initialBalance + netProfit;
 
           setWalletStats({
             tradesToday: tradesTodayCount,
             consecutiveLosses,
-            weeklyLosses
+            weeklyLosses,
+            currentBalance
           });
         }
       };
@@ -187,10 +249,73 @@ function NewOperationForm() {
     } else {
       Promise.resolve().then(() => {
         setRiskSettings(null);
-        setWalletStats({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0 });
+        setWalletStats({ tradesToday: 0, consecutiveLosses: 0, weeklyLosses: 0, currentBalance: 0 });
       });
     }
-  }, [formData.wallet_id, supabase]);
+  }, [formData.wallet_id, supabase, wallets]);
+
+  const parseNumber = (val: string) => {
+    if (!val) return 0;
+    const parsed = parseFloat(val.replace(',', '.'));
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const estimatedProfit = (() => {
+    const entry = parseNumber(formData.entry_price);
+    const exit = parseNumber(formData.exit_price);
+    const qty = parseNumber(formData.quantity);
+    const fees = parseNumber(formData.fees);
+    const multiplier = parseNumber(formData.multiplier) || 1;
+    const contractSize = parseNumber(formData.contract_size) || 1;
+    
+    if (!entry || !exit || !qty) return 0;
+    
+    const gross = (exit - entry) * contractSize * qty * multiplier * (formData.type === 'BUY' ? 1 : -1);
+    return gross - fees;
+  })();
+
+  const derivedStatus = (() => {
+    if (estimatedProfit > 0) return 'WIN';
+    if (estimatedProfit < 0) return 'LOSS';
+    if (parseNumber(formData.entry_price) > 0 && parseNumber(formData.exit_price) > 0) return 'BE';
+    return formData.status || 'WIN';
+  })();
+
+  const riskReward = (() => {
+    const entry = parseNumber(formData.entry_price);
+    const sl = parseNumber(formData.stop_loss);
+    const tp = parseNumber(formData.take_profit);
+    const qty = parseNumber(formData.quantity);
+    const contractSize = parseNumber(formData.contract_size) || 1;
+    const multiplier = parseNumber(formData.multiplier) || 1;
+
+    if (!entry || !qty) return { risk: 0, reward: 0, ratio: 0 };
+
+    const risk = sl ? Math.abs(entry - sl) * contractSize * qty * multiplier : 0;
+    const reward = tp ? Math.abs(tp - entry) * contractSize * qty * multiplier : 0;
+    const ratio = risk > 0 ? reward / risk : 0;
+
+    return { risk, reward, ratio };
+  })();
+
+  const riskAlert = (() => {
+    if (riskReward.risk <= 0) return null;
+    const selectedWallet = wallets.find(w => w.id === formData.wallet_id);
+    const balance = selectedWallet?.balance || 0;
+    if (balance <= 0) return null;
+
+    const riskPercent = (riskReward.risk / balance) * 100;
+    const limit = riskSettings?.risk_per_trade_percent ? parseFloat(riskSettings.risk_per_trade_percent) : 1;
+
+    if (riskPercent > limit) {
+      return {
+        percent: riskPercent,
+        limit: limit,
+        message: `ALERTA: O risco planejado (${riskPercent.toFixed(2)}%) excede o limite de ${limit}%!`
+      };
+    }
+    return null;
+  })();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,11 +356,14 @@ function NewOperationForm() {
     const exit = parseNumber(formData.exit_price);
     const qty = parseNumber(formData.quantity);
     const fees = parseNumber(formData.fees);
+    const multiplier = parseNumber(formData.multiplier) || 1;
+    const contractSize = parseNumber(formData.contract_size) || 1;
     
-    const gross_profit = (exit - entry) * qty * (formData.type === 'BUY' ? 1 : -1);
+    // Universal Formula: (exit - entry) * contract_size * lot * direction * multiplier
+    const gross_profit = (exit - entry) * contractSize * qty * multiplier * (formData.type === 'BUY' ? 1 : -1);
     const net_profit = gross_profit - fees;
 
-    const tradeData = {
+    const tradeData: any = {
       user_id: user.id,
       wallet_id: formData.wallet_id,
       asset: formData.asset.toUpperCase(),
@@ -246,12 +374,20 @@ function NewOperationForm() {
       entry_time: formData.entry_time ? new Date(formData.entry_time).toISOString() : null,
       exit_time: formData.exit_time ? new Date(formData.exit_time).toISOString() : null,
       quantity: qty,
-      status: formData.status,
+      status: derivedStatus,
       strategy: formData.strategy,
       trigger_id: finalTriggerId || null,
       mental_state: formData.mental_state,
       notes: (() => {
-        let n = formData.session !== 'None' ? `[Sessão: ${formData.session}]\n${formData.notes}` : formData.notes;
+        let n = '';
+        if (formData.session !== 'None') n += `[Sessão: ${formData.session}]\n`;
+        n += `[Multiplicador: ${multiplier}]\n`;
+        n += `[Contract Size: ${contractSize}]\n`;
+        if (formData.sleep_hours) n += `[Sono: ${formData.sleep_hours}h]\n`;
+        if (formData.stop_loss) n += `[SL: ${formData.stop_loss}]\n`;
+        if (formData.take_profit) n += `[TP: ${formData.take_profit}]\n`;
+        n += formData.notes;
+        
         if (riskSettings && (riskSettings.risk_per_trade_percent || riskSettings.max_trades_per_day || riskSettings.max_consecutive_losses || riskSettings.max_losses_per_week)) {
           n += `\n\n[Gestão de Risco: ${riskSettings.risk_per_trade_percent ? riskSettings.risk_per_trade_percent + '%/op' : ''} ${riskSettings.max_trades_per_day ? '| Max ' + riskSettings.max_trades_per_day + '/dia' : ''} ${riskSettings.max_consecutive_losses ? '| Loss ' + riskSettings.max_consecutive_losses + ' seg' : ''} ${riskSettings.max_losses_per_week ? '| Loss ' + riskSettings.max_losses_per_week + '/sem' : ''}]`;
         }
@@ -310,8 +446,23 @@ function NewOperationForm() {
     { value: 'STRESSED', label: 'Stressed', emoji: '😫' },
   ];
 
+  const handleAssetChange = (asset: string) => {
+    const upperAsset = asset.toUpperCase();
+    const config = ASSET_CONFIG[upperAsset];
+    if (config) {
+      setFormData(prev => ({
+        ...prev,
+        asset: upperAsset,
+        contract_size: config.size.toString(),
+        multiplier: '1' // Reset multiplier when using standard config
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, asset: upperAsset }));
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
@@ -337,13 +488,18 @@ function NewOperationForm() {
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div className="space-y-6 md:col-span-1 lg:col-span-1">
+      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="space-y-6 lg:col-span-5">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
-            <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Dados do Ativo
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Dados do Ativo
+              </h3>
+              <div className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${estimatedProfit >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                Resultado: {preferences.currency === 'BRL' ? 'R$' : '$'} {estimatedProfit.toFixed(2)}
+              </div>
+            </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -365,11 +521,17 @@ function NewOperationForm() {
                 <input 
                   required
                   type="text" 
+                  list="asset-suggestions"
                   value={formData.asset}
-                  onChange={(e) => setFormData({...formData, asset: e.target.value})}
+                  onChange={(e) => handleAssetChange(e.target.value)}
                   placeholder="Ex: WINJ24, EURUSD"
                   className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
+                <datalist id="asset-suggestions">
+                  {(MARKET_ASSETS[formData.market] || []).map(asset => (
+                    <option key={asset} value={asset} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -408,18 +570,57 @@ function NewOperationForm() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Quantidade</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Quantidade (Lotes)</label>
                 <input 
                   required
                   type="number" 
+                  step="any"
                   value={formData.quantity}
                   onChange={(e) => setFormData({...formData, quantity: e.target.value})}
                   placeholder="0"
                   className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Multiplicador</label>
+                <input 
+                  required
+                  type="number" 
+                  step="any"
+                  value={formData.multiplier}
+                  onChange={(e) => setFormData({...formData, multiplier: e.target.value})}
+                  placeholder="1"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contract Size</label>
+                <input 
+                  required
+                  type="number" 
+                  step="any"
+                  value={formData.contract_size}
+                  onChange={(e) => setFormData({...formData, contract_size: e.target.value})}
+                  placeholder="1"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+            </div>
+            <p className="text-[9px] text-slate-500 uppercase tracking-widest leading-relaxed">
+              O Contract Size é preenchido automaticamente para ativos conhecidos. Use o multiplicador para ajustes finos.
+            </p>
+            <div className="pt-2 border-t border-slate-800/50">
+              <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest leading-relaxed">
+                Cálculo do Pip: Lucro = (Diferença de Preço / Pip Size) * Lote * Multiplicador. 
+              </p>
+              <p className="text-[8px] text-slate-500 uppercase tracking-widest mt-1">
+                (Pip Size padrão: Forex = 0.0001 | JPY = 0.01 | B3 = 1.00)
+              </p>
             </div>
           </div>
 
@@ -429,14 +630,14 @@ function NewOperationForm() {
               Execução
             </h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Horário de Entrada</label>
                 <input 
                   type="datetime-local" 
                   value={formData.entry_time}
                   onChange={(e) => setFormData({...formData, entry_time: e.target.value})}
-                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
               <div className="space-y-1.5">
@@ -445,7 +646,7 @@ function NewOperationForm() {
                   type="datetime-local" 
                   value={formData.exit_time}
                   onChange={(e) => setFormData({...formData, exit_time: e.target.value})}
-                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
             </div>
@@ -453,48 +654,91 @@ function NewOperationForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Preço de Entrada</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{preferences.currency === 'BRL' ? 'R$' : '$'}</span>
-                  <input 
-                    required
-                    type="number" 
-                    step="any"
-                    value={formData.entry_price}
-                    onChange={(e) => setFormData({...formData, entry_price: e.target.value})}
-                    placeholder="0.00"
-                    className="w-full bg-[#050A15] border border-slate-800 rounded-xl pl-8 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
-                </div>
+                <input 
+                  required
+                  type="number" 
+                  step="any"
+                  value={formData.entry_price}
+                  onChange={(e) => setFormData({...formData, entry_price: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Preço de Saída</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{preferences.currency === 'BRL' ? 'R$' : '$'}</span>
-                  <input 
-                    required
-                    type="number" 
-                    step="any"
-                    value={formData.exit_price}
-                    onChange={(e) => setFormData({...formData, exit_price: e.target.value})}
-                    placeholder="0.00"
-                    className="w-full bg-[#050A15] border border-slate-800 rounded-xl pl-8 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
-                </div>
+                <input 
+                  required
+                  type="number" 
+                  step="any"
+                  value={formData.exit_price}
+                  onChange={(e) => setFormData({...formData, exit_price: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</label>
-                <select 
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none"
-                >
-                  <option value="WIN">WIN</option>
-                  <option value="LOSS">LOSS</option>
-                  <option value="BE">BREAK EVEN</option>
-                </select>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Stop Loss (SL)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={formData.stop_loss}
+                  onChange={(e) => setFormData({...formData, stop_loss: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Take Profit (TP)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={formData.take_profit}
+                  onChange={(e) => setFormData({...formData, take_profit: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+            </div>
+
+            {riskAlert && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{riskAlert.message}</p>
+              </div>
+            )}
+
+            {riskReward.risk > 0 && (
+              <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco Planejado</span>
+                  <span className="text-xs font-bold text-red-400">-{preferences.currency === 'BRL' ? 'R$' : '$'} {riskReward.risk.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Alvo Planejado</span>
+                  <span className="text-xs font-bold text-emerald-400">+{preferences.currency === 'BRL' ? 'R$' : '$'} {riskReward.reward.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-blue-500/10">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Relação R:R</span>
+                  <span className="text-xs font-bold text-blue-400">1 : {riskReward.ratio.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status (Automático)</label>
+                <div className={`w-full border rounded-xl px-4 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                  derivedStatus === 'WIN' ? 'bg-emerald-600/20 border-emerald-500 text-emerald-500' :
+                  derivedStatus === 'LOSS' ? 'bg-red-600/20 border-red-500 text-red-500' :
+                  'bg-blue-600/20 border-blue-500 text-blue-500'
+                }`}>
+                  {derivedStatus === 'WIN' && <TrendingUp className="w-4 h-4" />}
+                  {derivedStatus === 'LOSS' && <TrendingDown className="w-4 h-4" />}
+                  {derivedStatus === 'BE' && <Target className="w-4 h-4" />}
+                  {derivedStatus === 'BE' ? 'BREAK EVEN' : derivedStatus}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxas</label>
@@ -514,14 +758,14 @@ function NewOperationForm() {
           </div>
         </div>
 
-        <div className="space-y-6 md:col-span-1 lg:col-span-1">
+        <div className="space-y-6 lg:col-span-4">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Brain className="w-4 h-4" />
               Análise & Gatilhos
             </h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sessão</label>
                 <select 
@@ -545,6 +789,7 @@ function NewOperationForm() {
                 >
                   <option value="">Selecione uma estratégia...</option>
                   <optgroup label="Estratégias Padrão">
+                    <option value="REGRA DOS 3 TIMES">Regra dos 3 Times</option>
                     <option value="LIQUIDEZ">Liquidez</option>
                     <option value="ORDER BLOCK">Order Block</option>
                     <option value="SMC">ChoCH & SMC</option>
@@ -561,7 +806,18 @@ function NewOperationForm() {
                 </select>
               </div>
 
-              <div className="space-y-1.5 col-span-2">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Horas de Sono</label>
+                <input 
+                  type="text" 
+                  value={formData.sleep_hours}
+                  onChange={(e) => setFormData({...formData, sleep_hours: e.target.value})}
+                  placeholder="Ex: 8h ou 7.5"
+                  className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+
+              <div className="space-y-1.5 col-span-3">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gatilho (Trigger)</label>
                 <select 
                   value={formData.trigger_id}
@@ -678,7 +934,7 @@ function NewOperationForm() {
           </div>
         </div>
 
-        <div className="space-y-6 md:col-span-2 lg:col-span-1">
+        <div className="space-y-6 lg:col-span-3">
           <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-6 space-y-6 sticky top-8">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">
               <Wallet className="w-4 h-4" />
@@ -695,9 +951,36 @@ function NewOperationForm() {
               </div>
             ) : (
               <div className="space-y-4">
+                <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Saldo Real</span>
+                    <span className="text-sm font-bold text-white">{preferences.currency === 'BRL' ? 'R$' : '$'} {walletStats.currentBalance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco por Op.</span>
+                    <span className={`text-sm font-bold ${(() => {
+                      const riskPercent = walletStats.currentBalance > 0 ? (riskReward.risk / walletStats.currentBalance) * 100 : 0;
+                      return riskPercent > 1 ? 'text-red-500' : 'text-emerald-500';
+                    })()}`}>
+                      {walletStats.currentBalance > 0 ? ((riskReward.risk / walletStats.currentBalance) * 100).toFixed(2) : '0.00'}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco de Retorno</span>
+                    <span className={`text-sm font-bold ${(() => {
+                      const targetRR = riskSettings?.target_rr ? parseFloat(riskSettings.target_rr) : 0;
+                      if (targetRR === 0) return 'text-white';
+                      // Use a small epsilon for float comparison
+                      return Math.abs(riskReward.ratio - targetRR) < 0.01 ? 'text-emerald-500' : 'text-yellow-500';
+                    })()}`}>
+                      1 : {riskReward.ratio.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
                 {riskSettings.risk_per_trade_percent && (
                   <div className="bg-[#050A15] border border-slate-800 rounded-xl p-4 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco por Op.</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Meta de Risco</span>
                     <span className="text-sm font-bold text-white">{riskSettings.risk_per_trade_percent}%</span>
                   </div>
                 )}

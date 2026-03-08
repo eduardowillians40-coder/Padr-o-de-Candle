@@ -830,7 +830,7 @@ export default function ReportsPage() {
                   <BarChart 
                     data={stats.emotionChartData}
                     onClick={(data: any) => {
-                      if (data && data.activeLabel) {
+                      if (data && data.activeLabel !== undefined && data.activeLabel !== null) {
                         const label = String(data.activeLabel);
                         setFilterEmotion(label === filterEmotion ? 'all' : label);
                       }

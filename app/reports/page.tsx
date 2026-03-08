@@ -829,9 +829,10 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={stats.emotionChartData}
-                    onClick={(data) => {
+                    onClick={(data: any) => {
                       if (data && data.activeLabel) {
-                        setFilterEmotion(data.activeLabel === filterEmotion ? 'all' : data.activeLabel);
+                        const label = String(data.activeLabel);
+                        setFilterEmotion(label === filterEmotion ? 'all' : label);
                       }
                     }}
                   >

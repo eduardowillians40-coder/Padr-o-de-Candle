@@ -108,7 +108,7 @@ export default function OperationsPage() {
       // Load risk settings from localStorage for all wallets
       if (typeof window !== 'undefined' && walletsData) {
         const settings: Record<string, any> = {};
-        walletsData.forEach(w => {
+        (walletsData as any[]).forEach(w => {
           const saved = localStorage.getItem(`risk_settings_${w.id}`);
           if (saved) {
             try {
@@ -146,7 +146,7 @@ export default function OperationsPage() {
   }, [supabase, refresh, walletId]);
 
   // Lógica de filtragem robusta
-  const filteredTrades = trades.map(trade => {
+  const filteredTrades = trades.map((trade: any) => {
     // Parse extra data from notes
     const notes = trade.notes || '';
     const slMatch = notes.match(/\[SL: (.*?)\]/);
@@ -169,7 +169,7 @@ export default function OperationsPage() {
     }
 
     return { ...trade, sl, tp, sleep, rr };
-  }).filter(trade => {
+  }).filter((trade: any) => {
     const matchesWallet = filterWallet === 'all' || trade.wallet_id === filterWallet;
     const matchesAsset = filterAsset === '' || (trade.asset && trade.asset.toLowerCase().includes(filterAsset.toLowerCase()));
     const matchesType = filterType === 'all' || (filterType === 'LONG' ? trade.type === 'BUY' : trade.type === 'SELL');
@@ -201,11 +201,11 @@ export default function OperationsPage() {
 
   const stats = {
     total: filteredTrades.length,
-    win: filteredTrades.filter(t => t.status === 'WIN').length,
-    loss: filteredTrades.filter(t => t.status === 'LOSS').length,
-    be: filteredTrades.filter(t => t.status === 'BE').length,
-    netProfit: filteredTrades.reduce((acc, t) => acc + (t.net_profit || 0), 0),
-    fees: filteredTrades.reduce((acc, t) => acc + (t.fees || 0), 0)
+    win: filteredTrades.filter((t: any) => t.status === 'WIN').length,
+    loss: filteredTrades.filter((t: any) => t.status === 'LOSS').length,
+    be: filteredTrades.filter((t: any) => t.status === 'BE').length,
+    netProfit: filteredTrades.reduce((acc: number, t: any) => acc + (t.net_profit || 0), 0),
+    fees: filteredTrades.reduce((acc: number, t: any) => acc + (t.fees || 0), 0)
   };
 
   const days = eachDayOfInterval({
@@ -255,7 +255,7 @@ export default function OperationsPage() {
             className="bg-[#050A15] text-white text-sm font-bold p-3 rounded-lg border border-slate-800 focus:outline-none min-w-[180px] flex-1"
           >
             <option value="all">Todas as carteiras</option>
-            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            {wallets.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           
           <div className="relative flex-1 min-w-[180px]">
@@ -290,7 +290,7 @@ export default function OperationsPage() {
             </optgroup>
             {triggers.length > 0 && (
               <optgroup label="Meus Gatilhos">
-                {triggers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {triggers.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </optgroup>
             )}
           </select>

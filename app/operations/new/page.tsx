@@ -511,7 +511,7 @@ function NewOperationForm() {
                   className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none"
                 >
                   <option value="">Selecionar...</option>
-                  {wallets.map(w => (
+                  {wallets.map((w: any) => (
                     <option key={w.id} value={w.id}>{w.name}</option>
                   ))}
                 </select>
@@ -832,7 +832,7 @@ function NewOperationForm() {
                   </optgroup>
                   {triggers.length > 0 && (
                     <optgroup label="Meus Gatilhos">
-                      {triggers.map(t => (
+                      {triggers.map((t: any) => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </optgroup>
@@ -845,7 +845,7 @@ function NewOperationForm() {
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sentimento Dominante</label>
               <div className="grid grid-cols-3 gap-2">
-                {sentiments.map(s => (
+                {sentiments.map((s: any) => (
                   <button
                     key={s.value}
                     type="button"

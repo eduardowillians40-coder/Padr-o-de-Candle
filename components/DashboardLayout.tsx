@@ -393,14 +393,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 type="date"
                 value={startDate}
                 onChange={(e) => handleDateChange('start', e.target.value)}
-                className="bg-transparent text-slate-300 text-xs md:text-sm focus:outline-none dark:[color-scheme:dark]"
+                className="bg-transparent text-white text-xs md:text-sm focus:outline-none dark:[color-scheme:dark]"
               />
               <span className="text-slate-500 text-xs">até</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => handleDateChange('end', e.target.value)}
-                className="bg-transparent text-slate-300 text-xs md:text-sm focus:outline-none dark:[color-scheme:dark]"
+                className="bg-transparent text-white text-xs md:text-sm focus:outline-none dark:[color-scheme:dark]"
               />
             </div>
           </div>

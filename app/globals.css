@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@layer base {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+}
+
+/* Light Theme Overrides */
+.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+.light .bg-\[\#050A15\] {
+  background-color: #f8fafc !important;
+}
+.light .bg-\[\#0D1425\] {
+  background-color: #ffffff !important;
+}
+.light .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+.light .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+.light .text-white {
+  color: #0f172a !important;
+}
+.light .text-slate-400 {
+  color: #64748b !important;
+}
+.light .text-slate-300 {
+  color: #475569 !important;
+}
+.light .text-slate-200 {
+  color: #334155 !important;
+}
+.light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.light .bg-slate-800\/50 {
+  background-color: #f1f5f9 !important;
+}
+.light .bg-slate-800 {
+  background-color: #e2e8f0 !important;
+}
+.light .hover\:bg-slate-800\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+.light .border-slate-800\/50 {
+  border-color: #e2e8f0 !important;
+}
+.light .bg-gradient-to-br.from-\[\#0D1425\].to-\[\#050A15\] {
+  background-image: linear-gradient(to bottom right, #ffffff, #f8fafc) !important;
+}
+.light .text-blue-500 {
+  color: #2563eb !important;
+}
+.light .bg-blue-600\/10 {
+  background-color: #eff6ff !important;
+}
+.light .border-blue-500\/20 {
+  border-color: #bfdbfe !important;
+}
+.light .bg-blue-600\/20 {
+  background-color: #dbeafe !important;
+}
+.light .border-blue-500\/30 {
+  border-color: #93c5fd !important;
+}
+.light .bg-amber-500\/10 {
+  background-color: #fffbeb !important;
+}
+.light .border-amber-500\/20 {
+  border-color: #fef3c7 !important;
+}
+.light .bg-blue-500\/10 {
+  background-color: #eff6ff !important;
+}
+.light .bg-emerald-500\/10 {
+  background-color: #ecfdf5 !important;
+}
+.light .bg-red-500\/10 {
+  background-color: #fef2f2 !important;
+}
+.light .bg-red-500\/5 {
+  background-color: #fef2f2 !important;
+}
+.light .border-red-500\/10 {
+  border-color: #fee2e2 !important;
+}
+.light .text-red-400 {
+  color: #ef4444 !important;
+}
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

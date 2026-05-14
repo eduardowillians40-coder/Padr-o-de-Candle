@@ -982,7 +982,7 @@ export default function ReportsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '50px' }}>
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>Performance por Ativo</h2>
-            <div style={{ spaceY: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {stats.bestAssets.map((asset: any, i: number) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
                   <span style={{ fontSize: '14px', color: '#475569' }}>{asset[0]}</span>
@@ -999,7 +999,7 @@ export default function ReportsPage() {
           </div>
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>Análise Psicológica</h2>
-            <div style={{ spaceY: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {stats.psychologyRanking.map((item: any, i: number) => (
                 <div key={i} style={{ marginBottom: '15px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
@@ -1018,7 +1018,7 @@ export default function ReportsPage() {
         <div style={{ padding: '30px', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Conclusões e Insights</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-            <div style={{ spaceY: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <span style={{ color: '#3b82f6' }}>•</span>
                 <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Risco:</strong> {stats.insights.riskControl}</p>
@@ -1028,7 +1028,7 @@ export default function ReportsPage() {
                 <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Execução:</strong> {stats.insights.executionClean}</p>
               </div>
             </div>
-            <div style={{ spaceY: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <span style={{ color: '#8b5cf6' }}>•</span>
                 <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Hábitos:</strong> {stats.insights.sleepInsight}</p>

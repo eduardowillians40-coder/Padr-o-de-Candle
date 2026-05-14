@@ -1081,6 +1081,37 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        {/* Métricas Detalhadas */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Métricas Detalhadas de Performance</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '15px' }}>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Total Trades</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.total}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: stats.winRate >= 50 ? '#ecfdf5' : '#fef2f2', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Win Rate</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: stats.winRate >= 50 ? '#059669' : '#dc2626', margin: 0 }}>{stats.winRate.toFixed(1)}%</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Win</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#10b981', margin: 0 }}>{stats.wins}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Loss</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#ef4444', margin: 0 }}>{stats.losses}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>BE</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#3b82f6', margin: 0 }}>{stats.bes}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Payoff</p>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.payoff.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
         {/* Distribuição de Resultados */}
         <div style={{ marginBottom: '35px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Distribuição de Resultados</h2>
@@ -1235,35 +1266,74 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Estado Emocional & Sono */}
-        <div style={{ marginBottom: '35px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Estado Emocional & Sono</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+        {/* Psicologia & Análise Emocional Completa */}
+        <div style={{ marginBottom: '35px', padding: '25px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Análise Psicológica & Performance</h2>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '25px' }}>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Estado Dominante</p>
+              <p style={{ fontSize: '16px', fontWeight: '800', color: '#8b5cf6', margin: 0 }}>{stats.dominantMentalState}</p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{((stats.psychologyRanking[0]?.percentage) || 0).toFixed(0)}% das operações</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Melhor Estado Emocional</p>
+              <p style={{ fontSize: '16px', fontWeight: '800', color: '#10b981', margin: 0 }}>{stats.emotionChartData[0]?.name || 'N/A'}</p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{stats.emotionChartData[0]?.winRate?.toFixed(1) || 0}% Win Rate</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }}>Melhor Sono</p>
+              <p style={{ fontSize: '16px', fontWeight: '800', color: '#0ea5e9', margin: 0 }}>{stats.sleepChartData.find(s => s.count >= 2)?.name || 'N/A'}</p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>Maior taxa de acerto</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
             <div>
-              <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '15px' }}>Win Rate por Estado Emocional</p>
-              <div style={{ height: '180px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.emotionChartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
-                    <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                    <Bar dataKey="winRate" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '15px' }}>Performance por Estado Emocional</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '8px 0', textAlign: 'left', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Operações</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Win Rate</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.emotionChartData.slice(0, 5).map((e: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 0', fontSize: '11px', fontWeight: '600', color: '#0f172a' }}>{e.name}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', color: '#475569' }}>{e.count}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', fontWeight: '600', color: e.winRate >= 50 ? '#10b981' : '#ef4444' }}>{e.winRate.toFixed(1)}%</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', fontWeight: '600', color: e.profit >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(e.profit, preferences.currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <div>
-              <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '15px' }}>Profit por Horas de Sono</p>
-              <div style={{ height: '180px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.sleepChartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
-                    <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                    <Bar dataKey="profit" fill="#0ea5e9" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <p style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '15px' }}>Performance por Horas de Sono</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '8px 0', textAlign: 'left', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Sono</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Operações</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Win Rate</th>
+                    <th style={{ padding: '8px 0', textAlign: 'right', fontSize: '9px', color: '#64748b', textTransform: 'uppercase' }}>Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.sleepChartData.map((s: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 0', fontSize: '11px', fontWeight: '600', color: '#0f172a' }}>{s.name}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', color: '#475569' }}>{s.count}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', fontWeight: '600', color: s.winRate >= 50 ? '#10b981' : '#ef4444' }}>{s.winRate.toFixed(1)}%</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '11px', fontWeight: '600', color: s.profit >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(s.profit, preferences.currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1284,35 +1354,131 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Insights */}
-        <div style={{ marginBottom: '30px', padding: '25px', backgroundColor: '#f8fafc' }}>
-          <h2 style={{ fontSize: '12px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '15px' }}>Insights & Recomendações</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Execução</p>
-              <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>{stats.insights.executionClean}</p>
+        {/* Métricas Avançadas de Trading */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Métricas Avançadas de Trading</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Expectativa Matemática</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: stats.total > 0 ? (stats.netProfit / stats.total >= 0 ? '#10b981' : '#ef4444') : '#64748b', margin: 0 }}>
+                {formatCurrency(stats.total > 0 ? stats.netProfit / stats.total : 0, preferences.currency)}
+              </p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px' }}>por operação</p>
             </div>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Gestão</p>
-              <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>{stats.insights.riskControl}</p>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Relação R:R</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: stats.payoff >= 1 ? '#10b981' : '#f59e0b', margin: 0 }}>{stats.payoff.toFixed(2)}</p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px' }}>mínimo ideal: 1:1</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Fator de Lucro</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                {stats.losses > 0 ? (stats.avgWin * stats.wins / (Math.abs(stats.avgLoss) * stats.losses)).toFixed(2) : stats.wins > 0 ? '∞' : '0'}
+              </p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px' }}>lucro/perda total</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Shade Ratio</p>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: stats.winRate >= 50 ? '#10b981' : '#ef4444', margin: 0 }}>
+                {((stats.winRate * stats.payoff) - (100 - stats.winRate)).toFixed(2)}
+              </p>
+              <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px' }}>indicador de Edge</p>
             </div>
           </div>
-          <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
-            <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Hábitos & Estado Psicológico</p>
-            <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>
-              {stats.insights.sleepInsight}. Seu estado dominante é <strong>{stats.dominantMentalState}</strong>.
+        </div>
+
+        {/* Tabela de Trades Detalhada */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Histórico de Operações ({filteredTrades.length})</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8fafc' }}>
+                <th style={{ padding: '10px 8px', textAlign: 'left', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Data</th>
+                <th style={{ padding: '10px 8px', textAlign: 'left', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Ativo</th>
+                <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Tipo</th>
+                <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Status</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Profit</th>
+                <th style={{ padding: '10px 8px', textAlign: 'left', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', borderBottom: '2px solid #e2e8f0' }}>Emoção</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTrades.slice(0, 15).map((trade: any, i: number) => {
+                const tradeDate = new Date(trade.created_at);
+                return (
+                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '8px', color: '#64748b' }}>{format(tradeDate, 'dd/MM/yy HH:mm')}</td>
+                    <td style={{ padding: '8px', fontWeight: '600', color: '#0f172a' }}>{trade.asset}</td>
+                    <td style={{ padding: '8px', textAlign: 'center', color: '#475569' }}>{trade.type}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ 
+                        padding: '2px 8px', 
+                        borderRadius: '4px', 
+                        fontSize: '9px', 
+                        fontWeight: '700',
+                        backgroundColor: trade.status === 'WIN' ? '#dcfce7' : trade.status === 'LOSS' ? '#fef2f2' : '#eff6ff',
+                        color: trade.status === 'WIN' ? '#16a34a' : trade.status === 'LOSS' ? '#dc2626' : '#2563eb'
+                      }}>{trade.status}</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600', color: (trade.net_profit || 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                      {formatCurrency(trade.net_profit || 0, preferences.currency)}
+                    </td>
+                    <td style={{ padding: '8px', color: '#64748b' }}>{trade.mental_state || 'N/A'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredTrades.length > 15 && (
+            <p style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center', marginTop: '10px' }}>
+              Mostrando 15 de {filteredTrades.length} operações. Ver relatório completo para todas.
+            </p>
+          )}
+        </div>
+
+        {/* Insights */}
+        <div style={{ marginBottom: '30px', padding: '25px', backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '15px' }}>💡 Conclusão & Recomendações</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+            <div>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Execução</p>
+              <p style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>{stats.insights.executionClean}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Gestão</p>
+              <p style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>{stats.insights.riskControl}</p>
+            </div>
+          </div>
+          <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #334155' }}>
+            <p style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
+              {stats.insights.sleepInsight}. Seu estado emocional dominante é <strong style={{ color: '#a78bfa' }}>{stats.dominantMentalState}</strong> 
+              {' '}e {stats.insights.emotionInsight.toLowerCase()}.
             </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #0f172a' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600' }}>
-              Tactical Eye Intelligence Platform
-            </p>
+        {/* Footer Profissional */}
+        <div style={{ marginTop: '30px', paddingTop: '25px', borderTop: '3px solid #0f172a', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '40px', height: '40px', backgroundColor: '#0f172a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#3b82f6', fontSize: '18px', fontWeight: '900' }}>👁</span>
+              </div>
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', margin: 0 }}>Tactical Eye Intelligence</p>
+                <p style={{ fontSize: '9px', color: '#64748b', margin: 0 }}>Plataforma de Análise de Trading</p>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', margin: 0 }}>Documento Confidencial</p>
+              <p style={{ fontSize: '9px', color: '#94a3b8', margin: 0 }}>Não compartilhar sem autorização</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
             <p style={{ fontSize: '9px', color: '#94a3b8' }}>
-              Gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}
+              Gerado automaticamente em {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} às {format(new Date(), 'HH:mm')}
+            </p>
+            <p style={{ fontSize: '9px', color: '#64748b', fontWeight: '600' }}>
+              Sistema de Análise de Performance v2.0
             </p>
           </div>
         </div>

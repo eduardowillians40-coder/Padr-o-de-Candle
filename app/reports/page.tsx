@@ -1259,7 +1259,7 @@ export default function ReportsPage() {
                     <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                       <td style={{ padding: '6px 8px', color: '#64748b', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.entry_time ? format(new Date(trade.entry_time), 'dd/MM/yy') : '—'}</td>
                       <td style={{ padding: '6px 8px', fontWeight: '700', color: '#0f172a', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.asset}</td>
-                      <td style={{ padding: '6px 8px', color: trade.direction === 'LONG' ? '#10b981' : '#ef4444', fontWeight: '600', fontSize: '10px', textAlign: 'center', backgroundColor: 'transparent' }}>{trade.direction}</td>
+                      <td style={{ padding: '6px 8px', color: trade.type === 'BUY' ? '#10b981' : '#ef4444', fontWeight: '600', fontSize: '10px', textAlign: 'center', backgroundColor: 'transparent' }}>{trade.type}</td>
                       <td style={{ padding: '6px 8px', textAlign: 'center', backgroundColor: 'transparent' }}>
                         <span style={{ padding: '2px 6px', borderRadius: '20px', fontSize: '8px', fontWeight: '700', backgroundColor: trade.status === 'WIN' ? '#dcfce7' : trade.status === 'LOSS' ? '#fee2e2' : '#fef9c3', color: trade.status === 'WIN' ? '#166534' : trade.status === 'LOSS' ? '#991b1b' : '#854d0e' }}>{trade.status}</span>
                       </td>

@@ -28,6 +28,8 @@ import {
 import { motion } from 'motion/react';
 import { useUserPreferences } from '@/app/context/UserPreferencesContext';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { calculateTradingMetrics } from '@/execution/metrics_engine';
+import { Trade, Wallet } from '@/lib/types';
 
 function DashboardContent() {
   const { preferences } = useUserPreferences();
@@ -93,90 +95,22 @@ function DashboardContent() {
       const { data: trades } = await tradesQuery;
 
       if (wallets && trades) {
-        const initialBalance = wallets.reduce((acc: number, w: any) => acc + w.initial_balance, 0);
-        const profitNet = trades.reduce((acc: number, t: any) => acc + (t.net_profit || 0), 0);
-        const fees = trades.reduce((acc: number, t: any) => acc + (t.fees || 0), 0);
+        const results = calculateTradingMetrics(trades as Trade[], wallets as Wallet[], preferences);
         
-        const winningTrades = trades.filter((t: any) => t.status === 'WIN');
-        const losingTrades = trades.filter((t: any) => t.status === 'LOSS');
-        const wins = winningTrades.length;
-        const losses = losingTrades.length;
-        const be = trades.filter((t: any) => t.status === 'BE').length;
-        const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
-
-        // Calculate Goals Met
-        const goalsMet = wallets.filter((w: any) => {
-          const walletTrades = trades.filter((t: any) => t.wallet_id === w.id);
-          const walletProfit = walletTrades.reduce((acc: number, t: any) => acc + (t.net_profit || 0), 0);
-          const walletBalance = (w.initial_balance || 0) + walletProfit;
-          return w.meta_value && walletBalance >= w.meta_value;
-        }).length;
-
-        // Calculate RR (Risk/Reward)
-        const avgWin = wins > 0 ? winningTrades.reduce((acc: number, t: any) => acc + (t.gross_profit || 0), 0) / wins : 0;
-        const avgLoss = losses > 0 ? Math.abs(losingTrades.reduce((acc: number, t: any) => acc + (t.gross_profit || 0), 0)) / losses : 0;
-        const rr = avgLoss > 0 ? avgWin / avgLoss : (avgWin > 0 ? avgWin : 0);
-
-        // Calculate Drawdown and Equity Curve
-        let currentEquity = initialBalance;
-        let peakEquity = initialBalance;
-        let maxDrawdown = 0;
-        
-        // Sort trades by date
-        trades.sort((a: any, b: any) => {
-          const dateA = new Date(a.entry_time || a.created_at);
-          const dateB = new Date(b.entry_time || b.created_at);
-          return dateA.getTime() - dateB.getTime();
-        });
-
-        const newChartData: any[] = [];
-        newChartData.push({
-          name: 'Início',
-          value: initialBalance
-        });
-
-        let runningEquity = initialBalance;
-        trades.forEach((t: any) => {
-          runningEquity += (t.net_profit || 0);
-          
-          if (runningEquity > peakEquity) {
-            peakEquity = runningEquity;
-          }
-          
-          const currentDrawdown = peakEquity > 0 ? ((peakEquity - runningEquity) / peakEquity) * 100 : 0;
-          if (currentDrawdown > maxDrawdown) {
-            maxDrawdown = currentDrawdown;
-          }
-          
-          const date = new Date(t.entry_time || t.created_at);
-          const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-          
-          const lastPoint = newChartData[newChartData.length - 1];
-          if (lastPoint.name === dateStr) {
-            lastPoint.value = runningEquity;
-          } else {
-            newChartData.push({
-              name: dateStr,
-              value: runningEquity
-            });
-          }
-        });
-        
-        setChartData(newChartData);
-
+        setChartData(results.chartData);
         setStats({
-          totalTrades: trades.length,
-          winRate,
-          profitNet,
-          profitGross: profitNet + fees,
-          fees,
-          initialBalance,
-          profitPercentage: initialBalance > 0 ? (profitNet / initialBalance) * 100 : 0,
-          rr, 
-          drawdown: maxDrawdown,
-          walletsCount: wallets.length,
-          goalsMet,
-          beCount: be
+          totalTrades: results.totalTrades,
+          winRate: results.winRate,
+          profitNet: results.profitNet,
+          profitGross: results.profitGross,
+          fees: results.fees,
+          initialBalance: results.initialBalance,
+          profitPercentage: results.profitPercentage,
+          rr: results.rr, 
+          drawdown: results.drawdown,
+          walletsCount: results.walletsCount,
+          goalsMet: results.goalsMet,
+          beCount: results.beCount
         });
       }
       setLoading(false);

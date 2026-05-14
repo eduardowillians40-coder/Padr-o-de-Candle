@@ -1061,72 +1061,70 @@ export default function ReportsPage() {
         </div>
       )}
 
-      <div 
+      <div
         ref={printableRef}
-        style={{ 
-          position: 'absolute', 
-          left: '-9999px', 
-          top: 0, 
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: 0,
           width: '794px',
-          padding: '40px 50px',
-          backgroundColor: '#f8fafc', 
+          padding: '36px 48px',
+          backgroundColor: '#ffffff',
           color: '#0f172a',
           fontFamily: 'Inter, system-ui, sans-serif',
-          fontSize: '12px',
+          fontSize: '11px',
           lineHeight: 1.5,
           boxSizing: 'border-box'
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', paddingBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: '48px', height: '48px', backgroundColor: '#0f172a', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-              <span style={{ color: '#ffffff', fontSize: '20px', fontWeight: 'bold' }}>TE</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '18px', borderBottom: '2px solid #0f172a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', backgroundColor: '#0f172a', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#ffffff', fontSize: '16px', fontWeight: '800' }}>TE</span>
             </div>
             <div>
-              <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Relatório de Performance</h1>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tactical Eye Intelligence</p>
+              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Relatório de Performance</h1>
+              <p style={{ fontSize: '10px', color: '#64748b', margin: '3px 0 0 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tactical Eye Intelligence</p>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 4px 0', fontWeight: 'bold' }}>PERÍODO ANALISADO</p>
-            <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>
-              {dateRange === 'month' ? format(new Date(), 'MMMM yyyy', { locale: ptBR }).toUpperCase() : 
-               dateRange === 'custom' && customStartDate && customEndDate ? `${format(parseISO(customStartDate), 'dd/MM/yyyy')} a ${format(parseISO(customEndDate), 'dd/MM/yyyy')}` :
-               dateRange === '7d' ? 'ÚLTIMOS 7 DIAS' :
-               dateRange === '30d' ? 'ÚLTIMOS 30 DIAS' : 'TODO O PERÍODO'}
+            <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 3px 0', fontWeight: '700', textTransform: 'uppercase' }}>Período Analisado</p>
+            <p style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+              {dateRange === 'month' ? format(new Date(), 'MMMM yyyy', { locale: ptBR }).toUpperCase() :
+               dateRange === 'custom' && customStartDate && customEndDate ? `${format(parseISO(customStartDate), 'dd/MM/yyyy')} – ${format(parseISO(customEndDate), 'dd/MM/yyyy')}` :
+               dateRange === '7d' ? 'Últimos 7 Dias' :
+               dateRange === '30d' ? 'Últimos 30 Dias' : 'Todo o Período'}
             </p>
           </div>
         </div>
 
         {/* Resumo Executivo */}
-        <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em' }}>Resumo Executivo</h2>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1, backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '4px solid #3b82f6' }}>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Total Operações</p>
-              <p style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.total}</p>
-            </div>
-            <div style={{ flex: 1, backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '4px solid #8b5cf6' }}>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Win Rate</p>
-              <p style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.winRate.toFixed(1)}%</p>
-            </div>
-            <div style={{ flex: 1, backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${stats.netProfit >= 0 ? '#10b981' : '#ef4444'}` }}>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Lucro Líquido</p>
-              <p style={{ fontSize: '24px', fontWeight: '800', color: stats.netProfit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>{formatCurrency(stats.netProfit, preferences.currency)}</p>
-            </div>
-            <div style={{ flex: 1, backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '4px solid #f59e0b' }}>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Payoff</p>
-              <p style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.payoff.toFixed(2)}</p>
-            </div>
+        <div style={{ marginBottom: '22px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 0', paddingLeft: '8px', borderLeft: '3px solid #3b82f6', backgroundColor: 'transparent', display: 'block' }}>Resumo Executivo</div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {([['Total Operações', String(stats.total), '#3b82f6'], ['Win Rate', `${stats.winRate.toFixed(1)}%`, '#8b5cf6'], ['Lucro Líquido', formatCurrency(stats.netProfit, preferences.currency), stats.netProfit >= 0 ? '#10b981' : '#ef4444'], ['Payoff', stats.payoff.toFixed(2), '#f59e0b']] as [string,string,string][]).map(([label, value, color], i) => (
+              <div key={i} style={{ flex: 1, backgroundColor: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', borderTop: `3px solid ${color}` }}>
+                <div style={{ fontSize: '9px', color: '#64748b', margin: '0 0 6px 0', textTransform: 'uppercase', fontWeight: '600', backgroundColor: 'transparent' }}>{label}</div>
+                <div style={{ fontSize: '20px', fontWeight: '800', color: color, margin: 0, backgroundColor: 'transparent' }}>{value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+            {([['Ganhos', String(stats.wins), '#10b981', '#f0fdf4'], ['Perdas', String(stats.losses), '#ef4444', '#fef2f2'], ['Breakeven', String(stats.bes), '#f59e0b', '#fffbeb'], ['Lucro Bruto', formatCurrency(stats.grossProfit, preferences.currency), '#10b981', '#f0fdf4'], ['Taxas', formatCurrency(stats.totalFees, preferences.currency), '#ef4444', '#fef2f2']] as [string,string,string,string][]).map(([label, value, color, bg], i) => (
+              <div key={i} style={{ flex: 1, backgroundColor: bg, padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: color, backgroundColor: 'transparent' }}>{value}</div>
+                <div style={{ fontSize: '8px', color: color, fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'transparent' }}>{label}</div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* 2 Column Grid */}
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
           {/* Métricas de Risco */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em' }}>Gestão de Risco</h2>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Gestão de Risco</div>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
@@ -1153,7 +1151,7 @@ export default function ReportsPage() {
 
           {/* Ativos */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em' }}>Top Ativos</h2>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Top Ativos</div>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
@@ -1171,11 +1169,11 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* 2 Column Grid */}
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+        {/* Row 2: Psychology + Sessions + Triggers */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
           {/* Psicologia */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em' }}>Performance Comportamental</h2>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Análise Comportamental</div>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px' }}>
               <div style={{ marginBottom: '12px' }}>
                 <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 4px 0' }}>Estado Emocional Dominante</p>
@@ -1196,7 +1194,7 @@ export default function ReportsPage() {
 
           {/* Gatilhos */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em' }}>Principais Gatilhos</h2>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Principais Gatilhos</div>
             <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
@@ -1222,11 +1220,65 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        {/* Horários & Sessões */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Melhores Horários de Entrada</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#3b82f6', backgroundColor: 'transparent' }}>{stats.bestEntryHours.length > 0 ? stats.bestEntryHours.join(' · ') : 'N/A'}</div>
+          </div>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Sessão Mais Lucrativa</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', backgroundColor: 'transparent' }}>{stats.sortedSessions[0] ? `${stats.sortedSessions[0][0]}` : 'N/A'}</div>
+          </div>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Fora do Plano</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: stats.outOfPlanTrades.length === 0 ? '#10b981' : '#ef4444', backgroundColor: 'transparent' }}>{stats.outOfPlanTrades.length} ops</div>
+          </div>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Max Drawdown</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', backgroundColor: 'transparent' }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</div>
+          </div>
+        </div>
+
+        {/* Histórico de Operações */}
+        {filteredTrades.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px 0', paddingLeft: '8px', borderLeft: '3px solid #3b82f6', backgroundColor: 'transparent' }}>Histórico de Operações</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', backgroundColor: '#ffffff', borderRadius: '8px', overflow: 'hidden' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f1f5f9' }}>
+                  {['Data', 'Ativo', 'Direção', 'Resultado', 'Lucro/Perda', 'Gatilho'].map((h, i) => (
+                    <th key={i} style={{ padding: '7px 8px', textAlign: i >= 2 ? 'center' : 'left', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #e2e8f0', fontSize: '9px', backgroundColor: 'transparent' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTrades.slice(0, 20).map((trade, idx) => {
+                  const trig = triggers.find(tr => tr.id === trade.trigger_id);
+                  return (
+                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                      <td style={{ padding: '6px 8px', color: '#64748b', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.entry_time ? format(new Date(trade.entry_time), 'dd/MM/yy') : '—'}</td>
+                      <td style={{ padding: '6px 8px', fontWeight: '700', color: '#0f172a', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.asset}</td>
+                      <td style={{ padding: '6px 8px', color: trade.direction === 'LONG' ? '#10b981' : '#ef4444', fontWeight: '600', fontSize: '10px', textAlign: 'center', backgroundColor: 'transparent' }}>{trade.direction}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'center', backgroundColor: 'transparent' }}>
+                        <span style={{ padding: '2px 6px', borderRadius: '20px', fontSize: '8px', fontWeight: '700', backgroundColor: trade.status === 'WIN' ? '#dcfce7' : trade.status === 'LOSS' ? '#fee2e2' : '#fef9c3', color: trade.status === 'WIN' ? '#166534' : trade.status === 'LOSS' ? '#991b1b' : '#854d0e' }}>{trade.status}</span>
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '700', color: (trade.net_profit || 0) >= 0 ? '#10b981' : '#ef4444', fontSize: '10px', backgroundColor: 'transparent' }}>{formatCurrency(trade.net_profit || 0, preferences.currency)}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', color: '#64748b', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '90px', backgroundColor: 'transparent' }}>{trig?.name || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filteredTrades.length > 20 && (
+              <div style={{ padding: '6px', textAlign: 'center', fontSize: '9px', color: '#94a3b8', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>+ {filteredTrades.length - 20} operações não exibidas</div>
+            )}
+          </div>
+        )}
+
         {/* Conclusão */}
-        <div style={{ backgroundColor: '#0f172a', borderRadius: '16px', padding: '24px', color: '#ffffff' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#3b82f6' }}>●</span> Insights & Recomendações
-          </h2>
+        <div style={{ backgroundColor: '#0f172a', borderRadius: '12px', padding: '20px', color: '#ffffff' }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 14px 0', backgroundColor: 'transparent' }}>● Insights & Recomendações</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Foco em Execução</p>

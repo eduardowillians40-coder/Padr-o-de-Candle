@@ -488,7 +488,8 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-8 p-6 max-w-7xl mx-auto">
+    <>
+      <div className="space-y-8 p-6 max-w-7xl mx-auto">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
@@ -989,7 +990,6 @@ export default function ReportsPage() {
           </div>
 
         </div>
-        {/* Contêiner invisível para exportação PDF (Renderizado fora da tela) */}
       <div 
         ref={printableRef}
         style={{ 
@@ -1003,6 +1003,7 @@ export default function ReportsPage() {
           fontFamily: "'Inter', sans-serif"
         }}
       >
+        {/* Contêiner invisível para exportação PDF (Renderizado fora da tela) */}
         {/* Header Profissional */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px', borderBottom: '2px solid #f1f5f9', paddingBottom: '30px' }}>
           <div>
@@ -1265,6 +1266,6 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

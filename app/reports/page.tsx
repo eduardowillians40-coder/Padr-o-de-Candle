@@ -1068,17 +1068,19 @@ export default function ReportsPage() {
           left: '-9999px',
           top: 0,
           width: '794px',
-          padding: '36px 48px',
+          padding: '40px 50px',
           backgroundColor: '#ffffff',
           color: '#0f172a',
           fontFamily: 'Inter, system-ui, sans-serif',
           fontSize: '11px',
           lineHeight: 1.5,
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          border: 'none',
+          outline: 'none'
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '18px', borderBottom: '2px solid #0f172a' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', paddingBottom: '25px', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ width: '44px', height: '44px', backgroundColor: '#0f172a', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: '#ffffff', fontSize: '16px', fontWeight: '800' }}>TE</span>
@@ -1100,21 +1102,21 @@ export default function ReportsPage() {
         </div>
 
         {/* Resumo Executivo */}
-        <div style={{ marginBottom: '22px' }}>
-          <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 0', paddingLeft: '8px', borderLeft: '3px solid #3b82f6', backgroundColor: 'transparent', display: 'block' }}>Resumo Executivo</div>
+        <div style={{ marginBottom: '25px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '800', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>Resumo Executivo</div>
           <div style={{ display: 'flex', gap: '10px' }}>
             {([['Total Operações', String(stats.total), '#3b82f6'], ['Win Rate', `${stats.winRate.toFixed(1)}%`, '#8b5cf6'], ['Lucro Líquido', formatCurrency(stats.netProfit, preferences.currency), stats.netProfit >= 0 ? '#10b981' : '#ef4444'], ['Payoff', stats.payoff.toFixed(2), '#f59e0b']] as [string,string,string][]).map(([label, value, color], i) => (
-              <div key={i} style={{ flex: 1, backgroundColor: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', borderTop: `3px solid ${color}` }}>
-                <div style={{ fontSize: '9px', color: '#64748b', margin: '0 0 6px 0', textTransform: 'uppercase', fontWeight: '600', backgroundColor: 'transparent' }}>{label}</div>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: color, margin: 0, backgroundColor: 'transparent' }}>{value}</div>
+              <div key={i} style={{ flex: 1, backgroundColor: '#f8fafc', padding: '18px 20px', borderRadius: '10px', border: 'none', outline: 'none' }}>
+                <div style={{ fontSize: '10px', color: '#64748b', margin: '0 0 6px 0', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.02em' }}>{label}</div>
+                <div style={{ fontSize: '24px', fontWeight: '900', color: color, margin: 0, lineHeight: 1 }}>{value}</div>
               </div>
             ))}
           </div>
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
             {([['Ganhos', String(stats.wins), '#10b981', '#f0fdf4'], ['Perdas', String(stats.losses), '#ef4444', '#fef2f2'], ['Breakeven', String(stats.bes), '#f59e0b', '#fffbeb'], ['Lucro Bruto', formatCurrency(stats.grossProfit, preferences.currency), '#10b981', '#f0fdf4'], ['Taxas', formatCurrency(stats.totalFees, preferences.currency), '#ef4444', '#fef2f2']] as [string,string,string,string][]).map(([label, value, color, bg], i) => (
-              <div key={i} style={{ flex: 1, backgroundColor: bg, padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: color, backgroundColor: 'transparent' }}>{value}</div>
-                <div style={{ fontSize: '8px', color: color, fontWeight: '600', textTransform: 'uppercase', backgroundColor: 'transparent' }}>{label}</div>
+              <div key={i} style={{ flex: 1, backgroundColor: bg, padding: '12px', borderRadius: '8px', textAlign: 'center', border: 'none', outline: 'none' }}>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: color, lineHeight: 1.2 }}>{value}</div>
+                <div style={{ fontSize: '9px', color: color, fontWeight: '800', textTransform: 'uppercase', marginTop: '2px' }}>{label}</div>
               </div>
             ))}
           </div>
@@ -1124,25 +1126,25 @@ export default function ReportsPage() {
         <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
           {/* Métricas de Risco */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Gestão de Risco</div>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Gestão de Risco</div>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', border: 'none', outline: 'none' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
                 <tbody>
                   <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Ganho Médio</td>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#10b981', fontWeight: 'bold', textAlign: 'right' }}>{formatCurrency(stats.avgWin, preferences.currency)}</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Ganho Médio</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#10b981', fontWeight: '900', textAlign: 'right' }}>{formatCurrency(stats.avgWin, preferences.currency)}</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Perda Média</td>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#ef4444', fontWeight: 'bold', textAlign: 'right' }}>{formatCurrency(stats.avgLoss, preferences.currency)}</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Perda Média</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#ef4444', fontWeight: '900', textAlign: 'right' }}>{formatCurrency(stats.avgLoss, preferences.currency)}</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Maior Drawdown</td>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#ef4444', fontWeight: 'bold', textAlign: 'right' }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Maior Drawdown</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#ef4444', fontWeight: '900', textAlign: 'right' }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Disciplina (Aderência)</td>
-                    <td style={{ padding: '12px 16px', fontSize: '13px', color: stats.disciplinePercentage >= 80 ? '#10b981' : '#f59e0b', fontWeight: 'bold', textAlign: 'right' }}>{stats.disciplinePercentage.toFixed(0)}%</td>
+                    <td style={{ padding: '14px 18px', fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Disciplina (Aderência)</td>
+                    <td style={{ padding: '14px 18px', fontSize: '14px', color: stats.disciplinePercentage >= 80 ? '#10b981' : '#f59e0b', fontWeight: '900', textAlign: 'right' }}>{stats.disciplinePercentage.toFixed(0)}%</td>
                   </tr>
                 </tbody>
               </table>
@@ -1151,17 +1153,17 @@ export default function ReportsPage() {
 
           {/* Ativos */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Top Ativos</div>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Top Ativos</div>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', border: 'none', outline: 'none' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
                 <tbody>
                   {stats.bestAssets.length > 0 ? stats.bestAssets.slice(0, 4).map((asset: [string, number], idx: number) => (
                     <tr key={idx}>
-                      <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #f1f5f9' : 'none', fontSize: '12px', color: '#0f172a', fontWeight: '600' }}>{asset[0]}</td>
-                      <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #f1f5f9' : 'none', fontSize: '13px', color: asset[1] >= 0 ? '#10b981' : '#ef4444', fontWeight: 'bold', textAlign: 'right' }}>{formatCurrency(asset[1], preferences.currency)}</td>
+                      <td style={{ padding: '14px 18px', borderBottom: idx < 3 ? '1px solid #f1f5f9' : 'none', fontSize: '13px', color: '#0f172a', fontWeight: '800' }}>{asset[0]}</td>
+                      <td style={{ padding: '14px 18px', borderBottom: idx < 3 ? '1px solid #f1f5f9' : 'none', fontSize: '14px', color: asset[1] >= 0 ? '#10b981' : '#ef4444', fontWeight: '900', textAlign: 'right' }}>{formatCurrency(asset[1], preferences.currency)}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={2} style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>Nenhum ativo operado</td></tr>
+                    <tr><td colSpan={2} style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>Nenhum ativo operado</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1173,8 +1175,8 @@ export default function ReportsPage() {
         <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
           {/* Psicologia */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Análise Comportamental</div>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px' }}>
+            <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Análise Comportamental</div>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: 'none', padding: '16px' }}>
               <div style={{ marginBottom: '12px' }}>
                 <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 4px 0' }}>Estado Emocional Dominante</p>
                 <p style={{ fontSize: '14px', color: '#8b5cf6', fontWeight: 'bold', margin: 0 }}>{stats.dominantMentalState}</p>
@@ -1194,25 +1196,25 @@ export default function ReportsPage() {
 
           {/* Gatilhos */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Principais Gatilhos</div>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Principais Gatilhos</div>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', border: 'none', outline: 'none' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', border: 'none' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
-                    <th style={{ padding: '10px 16px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>GATILHO</th>
-                    <th style={{ padding: '10px 16px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>PROFIT</th>
-                    <th style={{ padding: '10px 16px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>WR</th>
+                    <th style={{ padding: '12px 18px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0', fontWeight: '800' }}>GATILHO</th>
+                    <th style={{ padding: '12px 18px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: '800' }}>PROFIT</th>
+                    <th style={{ padding: '12px 18px', fontSize: '10px', color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: '800' }}>WR</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.triggerStats.length > 0 ? stats.triggerStats.slice(0, 3).map((t: any, i: number) => (
                     <tr key={i}>
-                      <td style={{ padding: '10px 16px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '11px', color: '#0f172a', fontWeight: '600', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</td>
-                      <td style={{ padding: '10px 16px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '12px', color: t.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: 'bold', textAlign: 'right' }}>{formatCurrency(t.profit, preferences.currency)}</td>
-                      <td style={{ padding: '10px 16px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '11px', color: '#64748b', fontWeight: '500', textAlign: 'right' }}>{t.winRate?.toFixed(0)}%</td>
+                      <td style={{ padding: '12px 18px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '12px', color: '#0f172a', fontWeight: '800', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</td>
+                      <td style={{ padding: '12px 18px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '13px', color: t.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '900', textAlign: 'right' }}>{formatCurrency(t.profit, preferences.currency)}</td>
+                      <td style={{ padding: '12px 18px', borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none', fontSize: '12px', color: '#64748b', fontWeight: '700', textAlign: 'right' }}>{t.winRate?.toFixed(0)}%</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={3} style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>Sem dados</td></tr>
+                    <tr><td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>Sem dados</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1222,19 +1224,19 @@ export default function ReportsPage() {
 
         {/* Horários & Sessões */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: 'none', padding: '14px' }}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Melhores Horários de Entrada</div>
             <div style={{ fontSize: '16px', fontWeight: '800', color: '#3b82f6', backgroundColor: 'transparent' }}>{stats.bestEntryHours.length > 0 ? stats.bestEntryHours.join(' · ') : 'N/A'}</div>
           </div>
-          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: 'none', padding: '14px' }}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Sessão Mais Lucrativa</div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', backgroundColor: 'transparent' }}>{stats.sortedSessions[0] ? `${stats.sortedSessions[0][0]}` : 'N/A'}</div>
           </div>
-          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: 'none', padding: '14px' }}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Fora do Plano</div>
             <div style={{ fontSize: '16px', fontWeight: '800', color: stats.outOfPlanTrades.length === 0 ? '#10b981' : '#ef4444', backgroundColor: 'transparent' }}>{stats.outOfPlanTrades.length} ops</div>
           </div>
-          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px' }}>
+          <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '8px', border: 'none', padding: '14px' }}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0', backgroundColor: 'transparent' }}>Max Drawdown</div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', backgroundColor: 'transparent' }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</div>
           </div>
@@ -1242,13 +1244,13 @@ export default function ReportsPage() {
 
         {/* Histórico de Operações */}
         {filteredTrades.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px 0', paddingLeft: '8px', borderLeft: '3px solid #3b82f6', backgroundColor: 'transparent' }}>Histórico de Operações</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', backgroundColor: '#ffffff', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ marginBottom: '25px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>Histórico de Operações</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#ffffff', border: 'none', outline: 'none' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f1f5f9' }}>
                   {['Data', 'Ativo', 'Direção', 'Resultado', 'Lucro/Perda', 'Gatilho'].map((h, i) => (
-                    <th key={i} style={{ padding: '7px 8px', textAlign: i >= 2 ? 'center' : 'left', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #e2e8f0', fontSize: '9px', backgroundColor: 'transparent' }}>{h}</th>
+                    <th key={i} style={{ padding: '10px 12px', textAlign: i >= 2 ? 'center' : 'left', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #e2e8f0', fontSize: '10px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1257,14 +1259,14 @@ export default function ReportsPage() {
                   const trig = triggers.find(tr => tr.id === trade.trigger_id);
                   return (
                     <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                      <td style={{ padding: '6px 8px', color: '#64748b', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.entry_time ? format(new Date(trade.entry_time), 'dd/MM/yy') : '—'}</td>
-                      <td style={{ padding: '6px 8px', fontWeight: '700', color: '#0f172a', fontSize: '10px', backgroundColor: 'transparent' }}>{trade.asset}</td>
-                      <td style={{ padding: '6px 8px', color: trade.type === 'BUY' ? '#10b981' : '#ef4444', fontWeight: '600', fontSize: '10px', textAlign: 'center', backgroundColor: 'transparent' }}>{trade.type}</td>
-                      <td style={{ padding: '6px 8px', textAlign: 'center', backgroundColor: 'transparent' }}>
-                        <span style={{ padding: '2px 6px', borderRadius: '20px', fontSize: '8px', fontWeight: '700', backgroundColor: trade.status === 'WIN' ? '#dcfce7' : trade.status === 'LOSS' ? '#fee2e2' : '#fef9c3', color: trade.status === 'WIN' ? '#166534' : trade.status === 'LOSS' ? '#991b1b' : '#854d0e' }}>{trade.status}</span>
+                      <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '11px' }}>{trade.entry_time ? format(new Date(trade.entry_time), 'dd/MM/yy') : '—'}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: '900', color: '#0f172a', fontSize: '11px' }}>{trade.asset}</td>
+                      <td style={{ padding: '10px 12px', color: trade.type === 'BUY' ? '#10b981' : '#ef4444', fontWeight: '800', fontSize: '11px', textAlign: 'center' }}>{trade.type}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span style={{ padding: '4px 8px', borderRadius: '20px', fontSize: '9px', fontWeight: '900', backgroundColor: trade.status === 'WIN' ? '#dcfce7' : trade.status === 'LOSS' ? '#fee2e2' : '#fef9c3', color: trade.status === 'WIN' ? '#166534' : trade.status === 'LOSS' ? '#991b1b' : '#854d0e' }}>{trade.status}</span>
                       </td>
-                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '700', color: (trade.net_profit || 0) >= 0 ? '#10b981' : '#ef4444', fontSize: '10px', backgroundColor: 'transparent' }}>{formatCurrency(trade.net_profit || 0, preferences.currency)}</td>
-                      <td style={{ padding: '6px 8px', textAlign: 'right', color: '#64748b', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '90px', backgroundColor: 'transparent' }}>{trig?.name || '—'}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '900', color: (trade.net_profit || 0) >= 0 ? '#10b981' : '#ef4444', fontSize: '11px' }}>{formatCurrency(trade.net_profit || 0, preferences.currency)}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#64748b', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{trig?.name || '—'}</td>
                     </tr>
                   );
                 })}
@@ -1277,8 +1279,8 @@ export default function ReportsPage() {
         )}
 
         {/* Conclusão */}
-        <div style={{ backgroundColor: '#0f172a', borderRadius: '12px', padding: '20px', color: '#ffffff' }}>
-          <div style={{ fontSize: '10px', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 14px 0', backgroundColor: 'transparent' }}>● Insights & Recomendações</div>
+        <div style={{ backgroundColor: '#0f172a', borderRadius: '12px', padding: '25px', color: '#ffffff', border: 'none' }}>
+          <div style={{ fontSize: '11px', fontWeight: '900', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '18px' }}>● Insights & Recomendações</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', fontWeight: 'bold' }}>Foco em Execução</p>

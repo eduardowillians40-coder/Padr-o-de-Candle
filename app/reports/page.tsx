@@ -17,7 +17,8 @@ import {
   Calendar as CalendarIcon,
   ChevronDown,
   ArrowLeft,
-  Download
+  Download,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
@@ -77,7 +78,12 @@ export default function ReportsPage() {
   const supabase = createClient();
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [pdfReady, setPdfReady] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const printableRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   const [trades, setTrades] = useState<ExtendedTrade[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
@@ -85,12 +91,82 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, { risk_per_trade_percent?: string, target_rr?: string, max_trades_per_day?: string, max_consecutive_losses?: string, max_losses_per_week?: string }>>({});
 
-  // Filters
   const [filterWallet, setFilterWallet] = useState('all');
   const [filterMarket, setFilterMarket] = useState('all');
   const [filterEmotion, setFilterEmotion] = useState('all');
   const [filterSleep, setFilterSleep] = useState('all');
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | 'month'>('month');
+
+  const handlePreviewPDF = async () => {
+    if (!printableRef.current) return;
+    setPdfReady(false);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const dataUrl = await domtoimage.toPng(printableRef.current, {
+        bgcolor: '#ffffff',
+        quality: 0.8,
+        scale: 2,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          position: 'static',
+          left: '0',
+          top: '0',
+          width: '794px'
+        }
+      });
+      
+      setPreviewImage(dataUrl);
+      setShowPreview(true);
+      setPdfReady(true);
+    } catch (error) {
+      console.error('Erro ao gerar preview:', error);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!previewImage) {
+      await handlePreviewPDF();
+    }
+    
+    if (!previewImage) return;
+    
+    try {
+      const img = new Image();
+      img.src = previewImage;
+      await new Promise((resolve) => { img.onload = resolve; });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4'
+      });
+      
+      const imgWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (img.height * imgWidth) / img.width;
+      
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      if (imgHeight > pageHeight) {
+        const scale = pageHeight / imgHeight;
+        pdf.addImage(previewImage, 'PNG', 0, 0, imgWidth * scale, pageHeight);
+      } else {
+        pdf.addImage(previewImage, 'PNG', 0, 0, imgWidth, imgHeight);
+      }
+      
+      pdf.save(`relatorio-performance-${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewImage(null);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,7 +186,6 @@ export default function ReportsPage() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
-      // Load risk settings from localStorage
       const riskSettings: Record<string, any> = {};
       if (typeof window !== 'undefined' && walletsData) {
         walletsData.forEach((w: any) => {
@@ -126,7 +201,7 @@ export default function ReportsPage() {
       setTrades(tradesData || []);
       setLoading(false);
     };
-
+    
     fetchData();
   }, [supabase]);
 
@@ -430,51 +505,6 @@ export default function ReportsPage() {
     };
   }, [filteredTrades, triggers, walletRiskSettings]);
 
-  const handleExportPDF = async () => {
-    if (!printableRef.current) return;
-    setExporting(true);
-    
-    try {
-      // Use a timeout to ensure charts are fully rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const dataUrl = await domtoimage.toPng(printableRef.current, {
-        bgcolor: '#ffffff',
-        quality: 1,
-        width: 800, // Matching the redesigned width
-        height: printableRef.current.offsetHeight,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-          position: 'static',
-          left: '0',
-          top: '0'
-        }
-      });
-      
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => { img.onload = resolve; });
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: 'a4'
-      });
-      
-      const imgWidth = pdf.internal.pageSize.getWidth();
-      const imgHeight = (img.height * imgWidth) / img.width;
-      
-      pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`relatorio-performance-${format(new Date(), 'dd-MM-yyyy')}.pdf`);
-    } catch (error) {
-      console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF. Tente novamente.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -506,8 +536,16 @@ export default function ReportsPage() {
           </div>
 
           <button
+            onClick={handlePreviewPDF}
+            disabled={stats.total === 0}
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
+          >
+            <Download className="w-4 h-4" />
+            Visualizar PDF
+          </button>
+          <button
             onClick={handleExportPDF}
-            disabled={exporting || stats.total === 0}
+            disabled={!pdfReady}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20"
           >
             {exporting ? (
@@ -515,7 +553,7 @@ export default function ReportsPage() {
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {exporting ? 'Exportando...' : 'Exportar PDF'}
+            {exporting ? 'Baixando...' : 'Baixar PDF'}
           </button>
         </div>
 
@@ -1279,6 +1317,51 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D1425] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <h2 className="text-white font-bold text-lg">Pré-visualização do Relatório</h2>
+              <button
+                onClick={closePreview}
+                className="p-2 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {previewImage ? (
+                <img 
+                  src={previewImage} 
+                  alt="Preview do Relatório" 
+                  className="w-full h-auto max-w-full mx-auto"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 p-4 border-t border-slate-800">
+              <button
+                onClick={handleExportPDF}
+                disabled={!pdfReady}
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-3 rounded-xl text-sm font-bold transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Baixar PDF
+              </button>
+              <button
+                onClick={closePreview}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl text-sm font-bold transition-all"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

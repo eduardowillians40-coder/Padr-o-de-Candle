@@ -30,6 +30,7 @@ export type Trade = {
   trigger_id: string | null;
   mental_state: string | null;
   notes: string | null;
+  entry_time: string | null;
   fees: number;
   gross_profit: number;
   net_profit: number;

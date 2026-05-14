@@ -1116,25 +1116,23 @@ export default function ReportsPage() {
         <div style={{ marginBottom: '35px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Distribuição de Resultados</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'center' }}>
-            <div style={{ height: '220px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={4}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    <Cell fill="#10b981" />
-                    <Cell fill="#ef4444" />
-                    <Cell fill="#3b82f6" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+            <div style={{ height: '220px', width: '100%', position: 'relative' }}>
+              <PieChart width={320} height={220}>
+                <Pie
+                  data={stats.statusData}
+                  cx={160}
+                  cy={110}
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={4}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#ef4444" />
+                  <Cell fill="#3b82f6" />
+                </Pie>
+              </PieChart>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '25px', marginTop: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#10b981' }} />

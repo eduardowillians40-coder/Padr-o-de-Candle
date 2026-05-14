@@ -37,6 +37,40 @@ import {
   PieChart,
   Pie
 } from 'recharts';
+import { Trade, Wallet, Trigger } from '@/lib/types';
+
+interface ExtendedTrade extends Trade {
+  wallets?: {
+    name: string;
+    initial_balance: number;
+  };
+}
+
+interface StatInsight {
+  riskControl: string;
+  executionClean: string;
+  sleepInsight: string;
+  emotionInsight: string;
+}
+
+interface PerformanceMetric {
+  profit: number;
+  count: number;
+  wins: number;
+}
+
+interface EmotionMetric extends PerformanceMetric {
+  name: string;
+}
+
+interface SleepMetric extends PerformanceMetric {
+  name: string;
+  totalHours: number;
+}
+
+interface ChartData extends EmotionMetric {
+  winRate: number;
+}
 
 export default function ReportsPage() {
   const { preferences } = useUserPreferences();
@@ -44,9 +78,9 @@ export default function ReportsPage() {
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
   const printableRef = useRef<HTMLDivElement>(null);
-  const [trades, setTrades] = useState<any[]>([]);
-  const [wallets, setWallets] = useState<any[]>([]);
-  const [triggers, setTriggers] = useState<any[]>([]);
+  const [trades, setTrades] = useState<ExtendedTrade[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, any>>({});
@@ -160,25 +194,25 @@ export default function ReportsPage() {
     });
 
     // Assets Performance
-    const assetStats = filteredTrades.reduce((acc: any, t) => {
+    const assetStats = filteredTrades.reduce((acc: Record<string, number>, t) => {
       if (!acc[t.asset]) acc[t.asset] = 0;
       acc[t.asset] += (t.net_profit || 0);
       return acc;
     }, {});
     
-    const sortedAssets = Object.entries(assetStats).sort((a: any, b: any) => b[1] - a[1]);
+    const sortedAssets = Object.entries(assetStats).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
     const bestAssets = sortedAssets.slice(0, 4);
-    const worstAssets = sortedAssets.slice(-3).reverse().filter((a: any) => a[1] < 0);
+    const worstAssets = sortedAssets.slice(-3).reverse().filter((a: [string, number]) => a[1] < 0);
 
     // Sessions and Hours
-    const entryHours = wins.reduce((acc: any, t) => {
+    const entryHours = wins.reduce((acc: Record<number, number>, t) => {
       if (!t.entry_time) return acc;
       const hour = new Date(t.entry_time).getHours();
       acc[hour] = (acc[hour] || 0) + 1;
       return acc;
     }, {});
 
-    const exitHours = wins.reduce((acc: any, t) => {
+    const exitHours = wins.reduce((acc: Record<number, number>, t) => {
       if (!t.exit_time) return acc;
       const hour = new Date(t.exit_time).getHours();
       acc[hour] = (acc[hour] || 0) + 1;
@@ -186,17 +220,17 @@ export default function ReportsPage() {
     }, {});
 
     const bestEntryHours = Object.entries(entryHours)
-      .sort((a: any, b: any) => b[1] - a[1])
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .slice(0, 3)
       .map(e => `${e[0].padStart(2, '0')}h`);
 
     const bestExitHours = Object.entries(exitHours)
-      .sort((a: any, b: any) => b[1] - a[1])
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .slice(0, 5)
       .map(e => `${e[0].padStart(2, '0')}h`);
 
     // Sessions from notes
-    const sessions = filteredTrades.reduce((acc: any, t) => {
+    const sessions = filteredTrades.reduce((acc: Record<string, { profit: number; count: number }>, t) => {
       const match = t.notes?.match(/\[Sessão: (.*?)\]/);
       if (match && match[1]) {
         const session = match[1];
@@ -207,16 +241,14 @@ export default function ReportsPage() {
       return acc;
     }, {});
 
-    const sortedSessions = Object.entries(sessions).sort((a: any, b: any) => b[1].profit - a[1].profit);
+    const sortedSessions = Object.entries(sessions).sort((a: [string, { profit: number; count: number }], b: [string, { profit: number; count: number }]) => b[1].profit - a[1].profit);
 
     // Triggers Analysis
-    const triggerStats = filteredTrades.reduce((acc: any, t) => {
-      let triggerName = t.trigger_id;
+    const triggerStats = filteredTrades.reduce((acc: Record<string, { win: number; loss: number; profit: number }>, t) => {
+      let triggerName = t.trigger_id || 'Sem Gatilho';
       if (t.trigger_id) {
         const customTrigger = triggers.find(tr => tr.id === t.trigger_id);
         if (customTrigger) triggerName = customTrigger.name;
-      } else {
-        triggerName = 'Sem Gatilho';
       }
       
       if (!acc[triggerName]) acc[triggerName] = { win: 0, loss: 0, profit: 0 };
@@ -227,7 +259,7 @@ export default function ReportsPage() {
     }, {});
 
     // Mental State Ranking
-    const mentalStats = filteredTrades.reduce((acc: any, t) => {
+    const mentalStats = filteredTrades.reduce((acc: Record<string, number>, t) => {
       const state = t.mental_state || 'NEUTRO';
       if (!acc[state]) acc[state] = 0;
       acc[state]++;
@@ -327,17 +359,17 @@ export default function ReportsPage() {
       return acc;
     }, {});
 
-    const emotionChartData = Object.values(emotionPerformance).map((e: any) => ({
+    const emotionChartData: ChartData[] = Object.values(emotionPerformance).map((e: any) => ({
       ...e,
       winRate: (e.wins / e.count) * 100
     }));
 
-    const sleepChartData = Object.values(sleepPerformance).map((s: any) => ({
+    const sleepChartData: ChartData[] = Object.values(sleepPerformance).map((s: any) => ({
       ...s,
       winRate: (s.wins / s.count) * 100
     })).sort((a, b) => {
-      const order = { 'N/A': 0, '< 6h': 1, '6-8h': 2, '> 8h': 3 };
-      return (order[a.name as keyof typeof order] || 0) - (order[b.name as keyof typeof order] || 0);
+      const order: Record<string, number> = { 'N/A': 0, '< 6h': 1, '6-8h': 2, '> 8h': 3 };
+      return (order[a.name] || 0) - (order[b.name] || 0);
     });
 
     // Insights Generation
@@ -683,7 +715,7 @@ export default function ReportsPage() {
                   <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Sessões que mais entregaram:</h3>
                     <ul className="space-y-2">
-                      {stats.sortedSessions.map((session: any, idx: number) => (
+                      {stats.sortedSessions.map((session: [string, { profit: number; count: number }], idx: number) => (
                         <li key={idx} className="flex justify-between items-center text-sm">
                           <span className="text-slate-300 flex items-center gap-2">
                             <div className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`} />
@@ -730,7 +762,7 @@ export default function ReportsPage() {
                     <div className="w-2 h-2 rounded-full bg-emerald-500" /> Melhores Ativos
                   </h3>
                   <div className="space-y-2">
-                    {stats.bestAssets.length > 0 ? stats.bestAssets.map((asset: any, idx: number) => (
+                    {stats.bestAssets.length > 0 ? stats.bestAssets.map((asset: [string, number], idx: number) => (
                       <div key={idx} className="flex justify-between items-center p-2 bg-[#050A15] rounded-lg border border-slate-800/50">
                         <span className="text-sm font-bold text-white">{asset[0]}</span>
                         <span className="text-sm font-bold text-emerald-500">{formatCurrency(asset[1], preferences.currency)}</span>
@@ -744,7 +776,7 @@ export default function ReportsPage() {
                     <div className="w-2 h-2 rounded-full bg-red-500" /> Piores Resultados
                   </h3>
                   <div className="space-y-2">
-                    {stats.worstAssets.length > 0 ? stats.worstAssets.map((asset: any, idx: number) => (
+                    {stats.worstAssets.length > 0 ? stats.worstAssets.map((asset: [string, number], idx: number) => (
                       <div key={idx} className="flex justify-between items-center p-2 bg-[#050A15] rounded-lg border border-slate-800/50">
                         <span className="text-sm font-bold text-white">{asset[0]}</span>
                         <span className="text-sm font-bold text-red-500">{formatCurrency(asset[1], preferences.currency)}</span>
@@ -771,8 +803,8 @@ export default function ReportsPage() {
 
               <div className="space-y-3">
                 {Object.entries(stats.triggerStats).length > 0 ? Object.entries(stats.triggerStats)
-                  .sort((a: any, b: any) => b[1].profit - a[1].profit)
-                  .map(([trigger, data]: [string, any], idx) => (
+                  .sort((a: [string, { profit: number }], b: [string, { profit: number }]) => b[1].profit - a[1].profit)
+                  .map(([trigger, data]: [string, { profit: number; win: number; loss: number }], idx: number) => (
                   <div key={idx} className="p-3 bg-[#050A15] rounded-xl border border-slate-800/50">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-white uppercase tracking-wider">{trigger}</span>
@@ -1023,7 +1055,7 @@ export default function ReportsPage() {
             <h3 style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>Performance por Ativo</h3>
             <div style={{ height: '300px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.bestAssets.slice(0, 5).map((a: any) => ({ name: a[0], value: a[1] }))}>
+                <BarChart data={stats.bestAssets.slice(0, 5).map((a: [string, number]) => ({ name: a[0], value: a[1] }))}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
                   <YAxis fontSize={10} axisLine={false} tickLine={false} />

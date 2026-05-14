@@ -103,7 +103,7 @@ export default function ComplianceDashboard() {
       if (!user) return;
 
       // 1. Buscar itens do checklist
-      const { data: items } = await supabase
+      const { data: itemsData } = await supabase
         .from('checklist_items')
         .select(`
           id, 

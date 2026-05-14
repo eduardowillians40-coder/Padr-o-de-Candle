@@ -45,7 +45,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [wallets, setWallets] = useState<any[]>([]);
-  const [strategies, setStrategies] = useState<any[]>([]);
+  const [strategies, setStrategies] = useState<{ id: string, name: string }[]>([]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

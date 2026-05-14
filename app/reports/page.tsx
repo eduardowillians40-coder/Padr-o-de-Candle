@@ -993,272 +993,288 @@ export default function ReportsPage() {
           position: 'absolute', 
           left: '-9999px', 
           top: 0, 
-          width: '800px', 
-          padding: '60px', 
+          width: '850px',
+          padding: '50px 60px',
           backgroundColor: '#ffffff', 
           color: '#1e293b', 
-          fontFamily: "'Inter', sans-serif"
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         }}
       >
-        {/* Contêiner invisível para exportação PDF (Renderizado fora da tela) */}
         {/* Header Profissional */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px', borderBottom: '2px solid #f1f5f9', paddingBottom: '30px' }}>
-          <div>
-            <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em', margin: 0 }}>RELATÓRIO DE PERFORMANCE</h1>
-            <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '600', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Tactical Eye Intelligence • {dateRange === 'month' ? format(new Date(), 'MMMM yyyy', { locale: ptBR }) : 'Período Selecionado'}
-            </p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', fontWeight: '800', color: '#3b82f6', backgroundColor: '#eff6ff', padding: '4px 12px', borderRadius: '20px', display: 'inline-block' }}>AUDIT STATUS: VERIFIED</div>
+        <div style={{ marginBottom: '40px', borderBottom: '3px solid #0f172a', paddingBottom: '25px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.02em', margin: 0, textTransform: 'uppercase' }}>Relatório de Performance</h1>
+              <p style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginTop: '8px' }}>
+                {dateRange === 'month' ? format(new Date(), 'MMMM yyyy', { locale: ptBR }) : 'Período Selecionado'}
+              </p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tactical Eye Intelligence</p>
+              <p style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>Documento Confidencial</p>
+            </div>
           </div>
         </div>
 
-        {/* Main Content Layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '60px', marginBottom: '60px' }}>
-          {/* Left Side: Chart */}
-          <div style={{ position: 'relative' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>Distribuição de Resultados</h3>
-            <div style={{ height: '320px', width: '100%' }}>
+        {/* Resumo Executivo */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Resumo Executivo</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
+            <div>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '5px' }}>Total Operações</p>
+              <p style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', margin: 0 }}>{stats.total}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '5px' }}>Win Rate</p>
+              <p style={{ fontSize: '26px', fontWeight: '800', color: '#3b82f6', margin: 0 }}>{stats.winRate.toFixed(1)}%</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '5px' }}>Lucro Líquido</p>
+              <p style={{ fontSize: '26px', fontWeight: '800', color: stats.netProfit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>
+                {formatCurrency(stats.netProfit, preferences.currency)}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '5px' }}>Expectativa</p>
+              <p style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                {formatCurrency(stats.total > 0 ? stats.netProfit / stats.total : 0, preferences.currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Distribuição de Resultados */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Distribuição de Resultados</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'center' }}>
+            <div style={{ height: '220px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={stats.statusData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={75}
-                    outerRadius={110}
-                    paddingAngle={8}
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={4}
                     dataKey="value"
                     stroke="none"
                   >
-                    <Cell fill="#10b981" /> {/* WIN */}
-                    <Cell fill="#ef4444" /> {/* LOSS */}
-                    <Cell fill="#3b82f6" /> {/* BE */}
+                    <Cell fill="#10b981" />
+                    <Cell fill="#ef4444" />
+                    <Cell fill="#3b82f6" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              {/* Custom Legend for Pie Chart */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#10b981' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>WINS ({stats.wins})</span>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '25px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#10b981' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#475569' }}>WIN ({stats.wins})</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#ef4444' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>LOSS ({stats.losses})</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#ef4444' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#475569' }}>LOSS ({stats.losses})</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#3b82f6' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>BE ({stats.bes})</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#3b82f6' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#475569' }}>BE ({stats.bes})</span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Right Side: Key Stats */}
-          <div>
-            <h2 style={{ fontSize: '36px', fontWeight: '800', color: '#1e293b', marginBottom: '20px', letterSpacing: '-0.02em' }}>Resumo da Carteira</h2>
-            <p style={{ fontSize: '15px', color: '#64748b', lineHeight: '1.7', marginBottom: '40px' }}>
-              Uma análise detalhada da sua performance operacional. Os dados refletem a execução das estratégias validadas e a consistência do gerenciamento de risco no período.
-            </p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-              <div style={{ padding: '20px 0', borderTop: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Win Rate Global</span>
-                <p style={{ fontSize: '32px', fontWeight: '900', color: '#3b82f6', margin: 0 }}>{stats.winRate.toFixed(1)}%</p>
-              </div>
-              <div style={{ padding: '20px 0', borderTop: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lucro Líquido</span>
-                <p style={{ fontSize: '32px', fontWeight: '900', color: stats.netProfit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>
-                  {formatCurrency(stats.netProfit, preferences.currency)}
-                </p>
-              </div>
-              <div style={{ padding: '20px 0', borderTop: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Operações</span>
-                <p style={{ fontSize: '32px', fontWeight: '900', color: '#1e293b', margin: 0 }}>{stats.total}</p>
-              </div>
-              <div style={{ padding: '20px 0', borderTop: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expectativa</span>
-                <p style={{ fontSize: '32px', fontWeight: '900', color: '#1e293b', margin: 0 }}>
-                  {formatCurrency(stats.total > 0 ? stats.netProfit / stats.total : 0, preferences.currency)}
-                </p>
+            <div>
+              <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.6', marginBottom: '20px' }}>
+                Uma análise detalhada da sua performance operacional no período.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Lucro Bruto</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{formatCurrency(stats.grossProfit, preferences.currency)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Taxas e Comissões</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#ef4444' }}>{formatCurrency(stats.totalFees, preferences.currency)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Lucro Líquido</span>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: stats.netProfit >= 0 ? '#10b981' : '#ef4444' }}>{formatCurrency(stats.netProfit, preferences.currency)}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section: Charts and Table */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '60px' }}>
-          {/* Bar Chart Section */}
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Performance por Ativo</h3>
-            <div style={{ height: '300px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.bestAssets.slice(0, 5).map((a: [string, number]) => ({ name: a[0], value: a[1] }))}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontWeight: 600 }} />
-                  <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontWeight: 600 }} />
-                  <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={45} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Performance por Ativo */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Performance por Ativo</h2>
+          <div style={{ height: '200px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.bestAssets.slice(0, 5).map((a: [string, number]) => ({ name: a[0], value: a[1] }))}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} />
+                <Bar dataKey="value" fill="#3b82f6" radius={[3, 3, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+        </div>
 
-          {/* Table Section (Real Strategy Data) */}
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Análise de Gatilhos (Estratégias)</h3>
-            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8fafc' }}>
-                    <th style={{ padding: '15px', textAlign: 'left', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Gatilho</th>
-                    <th style={{ padding: '15px', textAlign: 'right', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Profit</th>
-                    <th style={{ padding: '15px', textAlign: 'right', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Win Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.triggerStats.slice(0, 4).map((t: any, i: number) => (
-                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '15px', fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{t.name}</td>
-                      <td style={{ padding: '15px', textAlign: 'right', fontSize: '13px', color: t.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>
-                        {formatCurrency(t.profit, preferences.currency)}
-                      </td>
-                      <td style={{ padding: '15px', textAlign: 'right', fontSize: '13px', color: '#475569', fontWeight: '800' }}>{t.winRate.toFixed(1)}%</td>
-                    </tr>
-                  ))}
-                  {stats.triggerStats.length === 0 && (
-                    <tr>
-                      <td colSpan={3} style={{ padding: '30px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>Nenhum gatilho registrado no período.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+        {/* Análise de Gatilhos */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Análise de Gatilhos (Estratégias)</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '12px 15px', textAlign: 'left', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', backgroundColor: '#f8fafc' }}>Gatilho</th>
+                <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', backgroundColor: '#f8fafc' }}>Profit</th>
+                <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', backgroundColor: '#f8fafc' }}>Win Rate</th>
+                <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', backgroundColor: '#f8fafc' }}>Operações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.triggerStats.slice(0, 5).map((t: any, i: number) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '12px 15px', fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{t.name}</td>
+                  <td style={{ padding: '12px 15px', textAlign: 'right', fontSize: '12px', color: t.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>
+                    {formatCurrency(t.profit, preferences.currency)}
+                  </td>
+                  <td style={{ padding: '12px 15px', textAlign: 'right', fontSize: '12px', color: '#475569', fontWeight: '600' }}>{t.winRate.toFixed(1)}%</td>
+                  <td style={{ padding: '12px 15px', textAlign: 'right', fontSize: '12px', color: '#475569', fontWeight: '600' }}>{t.trades}</td>
+                </tr>
+              ))}
+              {stats.triggerStats.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ padding: '25px', textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>Nenhum gatilho registrado no período</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Métricas de Risco */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Métricas de Risco & Gestão</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '25px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Ganho Médio</p>
+              <p style={{ fontSize: '18px', fontWeight: '700', color: '#10b981', margin: 0 }}>{formatCurrency(stats.avgWin, preferences.currency)}</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Perda Média</p>
+              <p style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444', margin: 0 }}>{formatCurrency(stats.avgLoss, preferences.currency)}</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Payoff</p>
+              <p style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{stats.payoff.toFixed(2)}</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Drawdown Máx.</p>
+              <p style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444', margin: 0 }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</p>
             </div>
           </div>
         </div>
 
-        {/* New Section: Sessões & Horários */}
-        <div style={{ marginBottom: '60px' }}>
-          <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Sessões & Eficiência Horária</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px' }}>
-            <div style={{ padding: '25px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Melhor Sessão</span>
-              <p style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: '10px 0 0 0' }}>{stats.sortedSessions[0]?.[0] || 'N/A'}</p>
-              <p style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', marginTop: '5px' }}>
+        {/* Sessões & Horários */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Sessões & Eficiência Horária</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '25px' }}>
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Melhor Sessão</p>
+              <p style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{stats.sortedSessions[0]?.[0] || 'N/A'}</p>
+              <p style={{ fontSize: '12px', color: '#10b981', fontWeight: '600', marginTop: '5px' }}>
                 {stats.sortedSessions[0] ? formatCurrency(stats.sortedSessions[0][1].profit, preferences.currency) : '-'}
               </p>
             </div>
-            <div style={{ padding: '25px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Horário Entrada Top</span>
-              <p style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: '10px 0 0 0' }}>{stats.bestEntryHours[0] || 'N/A'}</p>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>Maior recorrência de Gains</p>
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Horário Entrada Top</p>
+              <p style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{stats.bestEntryHours[0] || 'N/A'}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>Maior recorrência de gains</p>
             </div>
-            <div style={{ padding: '25px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Horário Saída Top</span>
-              <p style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: '10px 0 0 0' }}>{stats.bestExitHours[0] || 'N/A'}</p>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>Saídas mais lucrativas</p>
-            </div>
-          </div>
-        </div>
-
-        {/* New Section: Métricas Avançadas de Risco & Performance */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '60px' }}>
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Gestão de Risco & Drawdown</h3>
-            <div style={{  }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Ganho Médio (Wins)</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#10b981' }}>{formatCurrency(stats.avgWin, preferences.currency)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Perda Média (Losses)</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#ef4444' }}>{formatCurrency(stats.avgLoss, preferences.currency)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Payoff (Risk/Reward Médio)</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{stats.payoff.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>Drawdown Máximo</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#ef4444' }}>{formatCurrency(stats.maxDrawdown, preferences.currency)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Disciplina do Plano</h3>
-            <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#f8fafc', borderRadius: '24px' }}>
-              <div style={{ fontSize: '48px', fontWeight: '900', color: stats.disciplinePercentage >= 80 ? '#10b981' : '#f59e0b' }}>
-                {stats.disciplinePercentage.toFixed(0)}%
-              </div>
-              <p style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginTop: '10px' }}>Aderência ao Plano</p>
-              <div style={{ marginTop: '20px', fontSize: '11px', color: '#94a3b8' }}>
-                {stats.outOfPlanTrades.length} operações fora dos critérios de risco/RR.
-              </div>
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '8px' }}>Horário Saída Top</p>
+              <p style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{stats.bestExitHours[0] || 'N/A'}</p>
+              <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>Saídas mais lucrativas</p>
             </div>
           </div>
         </div>
 
-        {/* New Section: Hábito & Estado Psicológico */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '60px' }}>
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Win Rate por Estado Emocional</h3>
-            <div style={{ height: '250px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.emotionChartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
-                  <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                  <Bar dataKey="winRate" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          <div>
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Performance por Horas de Sono</h3>
-            <div style={{ height: '250px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.sleepChartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
-                  <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                  <Bar dataKey="profit" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* New Section: Conclusão & Insights Profissionais */}
-        <div style={{ padding: '40px', backgroundColor: '#0f172a', borderRadius: '24px', color: '#ffffff' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '25px' }}>Conclusão da Auditoria</h3>
+        {/* Estado Emocional & Sono */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Estado Emocional & Sono</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-            <div style={{  }}>
-              <p style={{ fontSize: '11px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase' }}>Foco em Execução</p>
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>{stats.insights.executionClean}</p>
+            <div>
+              <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '15px' }}>Win Rate por Estado Emocional</p>
+              <div style={{ height: '180px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.emotionChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
+                    <YAxis fontSize={9} axisLine={false} tickLine={false} />
+                    <Bar dataKey="winRate" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div style={{  }}>
-              <p style={{ fontSize: '11px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase' }}>Foco em Gestão</p>
-              <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>{stats.insights.riskControl}</p>
+            <div>
+              <p style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '15px' }}>Profit por Horas de Sono</p>
+              <div style={{ height: '180px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.sleepChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
+                    <YAxis fontSize={9} axisLine={false} tickLine={false} />
+                    <Bar dataKey="profit" fill="#0ea5e9" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
-          <div style={{ marginTop: '30px', padding: '20px', borderTop: '1px solid #1e293b' }}>
-            <p style={{ fontSize: '11px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', marginBottom: '10px' }}>Insight de Hábitos (Sono/Emoção)</p>
-            <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6', fontStyle: 'italic' }}>
-              "{stats.insights.sleepInsight} Adicionalmente, seu estado dominante é {stats.dominantMentalState}, o que impacta diretamente na sua tomada de decisão."
+        </div>
+
+        {/* Disciplina */}
+        <div style={{ marginBottom: '35px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Disciplina & Aderência ao Plano</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '36px', fontWeight: '900', color: stats.disciplinePercentage >= 80 ? '#10b981' : '#f59e0b', margin: 0 }}>{stats.disciplinePercentage.toFixed(0)}%</p>
+              <p style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginTop: '5px' }}>Aderência ao Plano</p>
+            </div>
+            <div style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: '30px' }}>
+              <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.6' }}>
+                {stats.outOfPlanTrades.length} operações fora dos critérios de risco/RR no período analisado.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Insights */}
+        <div style={{ marginBottom: '30px', padding: '25px', backgroundColor: '#f8fafc' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '15px' }}>Insights & Recomendações</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+            <div>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Execução</p>
+              <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>{stats.insights.executionClean}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Foco em Gestão</p>
+              <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>{stats.insights.riskControl}</p>
+            </div>
+          </div>
+          <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Hábitos & Estado Psicológico</p>
+            <p style={{ fontSize: '11px', color: '#475569', lineHeight: '1.5' }}>
+              {stats.insights.sleepInsight}. Seu estado dominante é <strong>{stats.dominantMentalState}</strong>.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ marginTop: '60px', paddingTop: '40px', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.2em' }}>
+        <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #0f172a' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600' }}>
               Tactical Eye Intelligence Platform
             </p>
-            <p style={{ fontSize: '9px', color: '#cbd5e1', marginTop: '5px' }}>
-              Relatório gerado automaticamente em {format(new Date(), 'dd/MM/yyyy HH:mm')} • Documento Confidencial.
+            <p style={{ fontSize: '9px', color: '#94a3b8' }}>
+              Gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}
             </p>
           </div>
         </div>

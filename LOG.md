@@ -36,6 +36,16 @@ Este arquivo registra as modificações realizadas no projeto para fins de audit
 
 ## [2026-05-14] - Implementação de Relatórios Automatizados (E) - Etapa 2
 
+### ✅ Melhorias de Relatórios e Build (14/05/2026)
+*   **Redesign do PDF**: Criado layout profissional em fundo branco, formato A4 retrato e alta resolução para exportação.
+*   **Fix Build Vercel**: Corrigido erro de propriedades CSS inválidas (`spaceY`) no `ReportsPage`.
+*   **Fix Build Vercel (Dep)**: Removidas dependências de `dotenv` em scripts da `execution layer` que estavam impedindo a compilação na Vercel.
+
+### 🛡️ Segurança (Hardening)
+*   **RLS Leads**: Ativado Row Level Security na tabela de leads.
+*   **Func-Security**: Revogada execução pública da função `handle_new_user`.
+*   **Audit-Report**: Relatório de segurança gerado e checklist de ação iniciado.
+
 ### 🛠️ Modificações Realizadas:
 1.  **Diretriz de Relatórios**:
     - Arquivo: `directives/report_generation.md`

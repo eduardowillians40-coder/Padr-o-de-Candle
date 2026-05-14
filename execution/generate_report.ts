@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { calculateTradingMetrics } from './metrics_engine';
 import { Trade, Wallet } from '../lib/types';
 
-dotenv.config();
+
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''; // Idealmente Service Role para scripts de agente

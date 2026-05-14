@@ -396,10 +396,6 @@ export default function ReportsPage() {
       wins: wins.length,
       losses: losses.length,
       bes: bes.length,
-      total,
-      win: wins.length,
-      loss: losses.length,
-      be: bes.length,
       netProfit,
       grossProfit,
       totalFees,
@@ -488,8 +484,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <>
-      <div className="space-y-8 p-6 max-w-7xl mx-auto">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
@@ -1047,15 +1042,15 @@ export default function ReportsPage() {
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#10b981' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>WINS ({stats.win})</span>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>WINS ({stats.wins})</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#ef4444' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>LOSS ({stats.loss})</span>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>LOSS ({stats.losses})</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#3b82f6' }} />
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>BE ({stats.be})</span>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>BE ({stats.bes})</span>
                 </div>
               </div>
             </div>
@@ -1171,7 +1166,7 @@ export default function ReportsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '60px' }}>
           <div>
             <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '30px' }}>Gestão de Risco & Drawdown</h3>
-            <div style={{ spaceY: '20px' }}>
+            <div style={{  }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '13px', color: '#64748b' }}>Ganho Médio (Wins)</span>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#10b981' }}>{formatCurrency(stats.avgWin, preferences.currency)}</span>
@@ -1239,11 +1234,11 @@ export default function ReportsPage() {
         <div style={{ padding: '40px', backgroundColor: '#0f172a', borderRadius: '24px', color: '#ffffff' }}>
           <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '25px' }}>Conclusão da Auditoria</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-            <div style={{ spaceY: '15px' }}>
+            <div style={{  }}>
               <p style={{ fontSize: '11px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase' }}>Foco em Execução</p>
               <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>{stats.insights.executionClean}</p>
             </div>
-            <div style={{ spaceY: '15px' }}>
+            <div style={{  }}>
               <p style={{ fontSize: '11px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase' }}>Foco em Gestão</p>
               <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>{stats.insights.riskControl}</p>
             </div>
@@ -1268,6 +1263,6 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

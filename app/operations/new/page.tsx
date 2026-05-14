@@ -187,6 +187,25 @@ function NewOperationForm() {
     fetchData();
   }, [supabase, isEditMode, tradeId, searchParams]);
 
+  // Read checklist answers from localStorage
+  const [checklistAnswers, setChecklistAnswers] = useState<Record<string, boolean>>({});
+  const [lastStrategyId, setLastStrategyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAnswers = localStorage.getItem('last_checklist_answers');
+      const savedStrategyId = localStorage.getItem('last_strategy_id');
+      if (savedAnswers) {
+        try {
+          setChecklistAnswers(JSON.parse(savedAnswers));
+        } catch (e) {
+          console.error('Error parsing checklist answers');
+        }
+      }
+      if (savedStrategyId) setLastStrategyId(savedStrategyId);
+    }
+  }, []);
+
   useEffect(() => {
     if (formData.wallet_id) {
       const fetchStats = async () => {
@@ -401,22 +420,51 @@ function NewOperationForm() {
     };
 
     let error;
+    let savedTrade: any = null;
+
     if (isEditMode && tradeId) {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('trades')
         .update(tradeData)
-        .eq('id', tradeId);
+        .eq('id', tradeId)
+        .select()
+        .single();
       error = updateError;
+      savedTrade = data;
     } else {
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('trades')
-        .insert(tradeData);
+        .insert(tradeData)
+        .select()
+        .single();
       error = insertError;
+      savedTrade = data;
     }
 
     if (error) {
       console.error('Error saving trade:', error.message || error);
       alert(`Erro ao salvar operação: ${error.message || 'Erro desconhecido'}`);
+    } else if (savedTrade && Object.keys(checklistAnswers).length > 0) {
+      // Save checklist responses
+      const responses = Object.entries(checklistAnswers).map(([itemId, isChecked]) => ({
+        trade_id: savedTrade.id,
+        item_id: itemId,
+        is_checked: isChecked
+      }));
+
+      const { error: checklistError } = await supabase
+        .from('trade_checklist_responses')
+        .insert(responses);
+
+      if (checklistError) {
+        console.error('Error saving checklist responses:', checklistError);
+      }
+
+      // Clear localStorage
+      localStorage.removeItem('last_checklist_answers');
+      localStorage.removeItem('last_strategy_id');
+      
+      router.push('/operations');
     } else {
       router.push('/operations');
     }

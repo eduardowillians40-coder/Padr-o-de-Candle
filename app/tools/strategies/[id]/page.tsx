@@ -79,7 +79,12 @@ export default function DynamicStrategyPage() {
     setResult(null);
   };
 
-  const handleExecuteTrade = () => router.push(`/operations/new?strategy=${encodeURIComponent(strategy.name)}`);
+  const handleExecuteTrade = () => {
+    // Save checklist results for the trade registration page
+    localStorage.setItem('last_checklist_answers', JSON.stringify(answers));
+    localStorage.setItem('last_strategy_id', strategy.id as string);
+    router.push(`/operations/new?strategy=${encodeURIComponent(strategy.name)}`);
+  };
 
   return (
     <div className="space-y-8">

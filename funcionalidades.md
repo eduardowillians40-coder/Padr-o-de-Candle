@@ -37,13 +37,13 @@ Este documento detalha as funcionalidades atuais do app "Padrão de Candle" e o 
 - **Ação**: Mover a lógica de cálculo matemático do Dashboard para `execution/metrics_engine.ts`.
 - **Resultado**: Lógica centralizada e desacoplada da UI.
 
-### Etapa 2: Implementação de Relatórios Automatizados
-- **Ação**: Criar `execution/export_performance_report.ts`.
-- **Objetivo**: Permitir que o agente gere PDFs de performance de forma autônoma quando solicitado.
+### Etapa 2: Implementação de Relatórios Automatizados [CONCLUÍDO]
+- **Ação**: Criar `execution/generate_report.ts` e `directives/report_generation.md`.
+- **Resultado**: O sistema agora permite a geração autônoma de relatórios de auditoria em `.tmp/`.
 
-### Etapa 3: Integração com Inteligência Artificial (O)
-- **Ação**: Utilizar o SDK da Google GenAI para criar um "Consultor de Estratégia".
-- **Diretriz**: Criar `directives/strategy_advisor.md` para orientar como o agente deve analisar os trades do usuário e sugerir melhorias.
+### Etapa 3: Integração com Inteligência Artificial (O) [CONCLUÍDO]
+- **Ação**: Criar `execution/analyze_compliance.ts` e `directives/strategy_advisor.md`.
+- **Resultado**: O agente agora consegue analisar quais itens do checklist você está negligenciando e como isso afeta seu lucro.
 
 ---
 

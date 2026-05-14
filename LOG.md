@@ -13,6 +13,11 @@ Este arquivo registra as modificações realizadas no projeto para fins de audit
     - Arquivo: `app/dashboard/page.tsx`
     - Descrição: Removida a lógica de cálculo inline do `useEffect` e substituída pela chamada à função `calculateTradingMetrics`.
     - Resultado: Código da UI mais limpo e lógica de negócio centralizada e testável.
+### ✅ Dashboard de Conformidade Visual (14/05/2026)
+*   **Visualização DOE**: Criada nova tela em `app/tools/compliance/page.tsx` que cruza dados de disciplina com performance financeira.
+*   **Gráficos de Impacto**: Implementados gráficos que comparam o Win Rate de quando o trader segue a regra vs. quando ignora.
+*   **Identificação de Pontos Cegos**: O sistema agora destaca automaticamente qual regra da estratégia está causando mais prejuízo por falta de disciplina.
+*   **Insights Contextuais**: Adicionado um "Consultor de Estratégia" que fornece feedbacks baseados nos dados reais de execução.
 
 ### 📄 Documentação:
 - Arquivo `directives/framework_compliance.md` criado.
@@ -45,6 +50,9 @@ Este arquivo registra as modificações realizadas no projeto para fins de audit
 *   **RLS Leads**: Ativado Row Level Security na tabela de leads.
 *   **Func-Security**: Revogada execução pública da função `handle_new_user`.
 *   **Audit-Report**: Relatório de segurança gerado e checklist de ação iniciado.
+### Etapa 4: Dashboard de Conformidade Visual [CONCLUÍDO]
+- **Ação**: Criar interface gráfica para visualização dos dados de auditoria em `app/tools/compliance/page.tsx`.
+- **Resultado**: O usuário agora tem uma visão clara do custo financeiro da sua indisciplina e quais regras específicas precisa focar para melhorar sua performance.
 
 ### 🛠️ Modificações Realizadas:
 1.  **Diretriz de Relatórios**:

@@ -196,6 +196,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       { name: 'Ondas de Elliott', href: '/tools/elliott' },
       { name: 'Simular Performance', href: '/tools/simulator' },
       { name: 'Sessões de Mercado', href: '/tools/sessions' },
+      { name: 'Conformidade (DOE)', href: '/tools/compliance' },
       // Estratégias Dinâmicas
       ...strategies.map(s => ({ name: s.name, href: `/tools/strategies/${s.id}` })),
     ]},

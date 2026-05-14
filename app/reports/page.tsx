@@ -83,7 +83,7 @@ export default function ReportsPage() {
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, any>>({});
+  const [walletRiskSettings, setWalletRiskSettings] = useState<Record<string, { risk_per_trade_percent?: string, target_rr?: string, max_trades_per_day?: string, max_consecutive_losses?: string, max_losses_per_week?: string }>>({});
 
   // Filters
   const [filterWallet, setFilterWallet] = useState('all');
@@ -213,8 +213,9 @@ export default function ReportsPage() {
     }, {});
 
     const exitHours = wins.reduce((acc: Record<number, number>, t) => {
-      if (!t.exit_time) return acc;
-      const hour = new Date(t.exit_time).getHours();
+      const exitDate = t.exit_time || t.created_at;
+      if (!exitDate) return acc;
+      const hour = new Date(exitDate).getHours();
       acc[hour] = (acc[hour] || 0) + 1;
       return acc;
     }, {});

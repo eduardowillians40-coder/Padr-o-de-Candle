@@ -31,6 +31,7 @@ export type Trade = {
   mental_state: string | null;
   notes: string | null;
   entry_time: string | null;
+  exit_time: string | null;
   fees: number;
   gross_profit: number;
   net_profit: number;

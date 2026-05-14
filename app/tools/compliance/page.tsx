@@ -179,7 +179,7 @@ export default function ComplianceDashboard() {
 
       // Calcular sumário
       if (complianceResults.length > 0) {
-        const avg = complianceResults.reduce((acc, curr) => acc + curr.complianceRate, 0) / complianceResults.length;
+        const avg = complianceResults.reduce((acc: number, curr: ComplianceResult) => acc + curr.complianceRate, 0) / complianceResults.length;
         const sortedByCompliance = [...complianceResults].sort((a, b) => a.complianceRate - b.complianceRate);
         const sortedByWinRate = [...complianceResults].sort((a, b) => b.winRateWhenFollowed - a.winRateWhenFollowed);
 
@@ -304,7 +304,7 @@ export default function ComplianceDashboard() {
                       itemStyle={{ fontSize: '12px' }}
                     />
                     <Bar dataKey="complianceRate" radius={[0, 4, 4, 0]} barSize={20}>
-                      {results.map((entry, index) => (
+                      {results.map((entry: ComplianceResult, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.complianceRate >= 80 ? '#10b981' : entry.complianceRate >= 50 ? '#f59e0b' : '#ef4444'} />
                       ))}
                     </Bar>

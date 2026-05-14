@@ -26,6 +26,15 @@ import {
 } from 'recharts';
 import { motion } from 'motion/react';
 import { useUserPreferences } from '@/app/context/UserPreferencesContext';
+import { Trade } from '@/lib/types';
+
+interface ChecklistResponse {
+  id: string;
+  trade_id: string;
+  item_id: string;
+  is_checked: boolean;
+  created_at: string;
+}
 
 interface ComplianceResult {
   itemName: string;
@@ -37,11 +46,25 @@ interface ComplianceResult {
   profitContribution?: number;
 }
 
+interface Strategy {
+  id: string;
+  name: string;
+}
+
+interface ChecklistItem {
+  id: string;
+  text: string;
+  step_id: {
+    name: string;
+    strategy_id: string;
+  };
+}
+
 export default function ComplianceDashboard() {
   const { preferences } = useUserPreferences();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
-  const [strategies, setStrategies] = useState<any[]>([]);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [selectedStrategy, setSelectedStrategy] = useState<string>('');
   const [results, setResults] = useState<ComplianceResult[]>([]);
   const [summary, setSummary] = useState({
@@ -90,9 +113,9 @@ export default function ComplianceDashboard() {
             strategy_id
           )
         `)
-        .eq('step_id.strategy_id', selectedStrategy);
+      const items = (itemsData || []) as unknown as ChecklistItem[];
 
-      if (!items || items.length === 0) {
+      if (items.length === 0) {
         setResults([]);
         setLoading(false);
         return;
@@ -100,13 +123,15 @@ export default function ComplianceDashboard() {
 
       // 2. Buscar trades desta estratégia
       const strategyName = strategies.find(s => s.id === selectedStrategy)?.name;
-      const { data: trades } = await supabase
+      const { data: tradesData } = await supabase
         .from('trades')
         .select('id, status, net_profit')
         .eq('user_id', user.id)
         .eq('strategy', strategyName);
 
-      if (!trades || trades.length === 0) {
+      const trades = (tradesData || []) as Partial<Trade>[];
+
+      if (trades.length === 0) {
         setResults([]);
         setLoading(false);
         return;
@@ -115,13 +140,15 @@ export default function ComplianceDashboard() {
       const tradeIds = trades.map(t => t.id);
 
       // 3. Buscar respostas
-      const { data: responses } = await supabase
+      const { data: responsesData } = await supabase
         .from('trade_checklist_responses')
         .select('*')
         .in('trade_id', tradeIds);
+      
+      const responses = (responsesData || []) as ChecklistResponse[];
 
-      const complianceResults: ComplianceResult[] = items.map((item: any) => {
-        const itemResponses = responses?.filter(r => r.item_id === item.id) || [];
+      const complianceResults: ComplianceResult[] = items.map((item) => {
+        const itemResponses = responses.filter(r => r.item_id === item.id);
         const followed = itemResponses.filter(r => r.is_checked);
         
         const tradesFollowed = trades.filter(t => itemResponses.find(r => r.trade_id === t.id)?.is_checked);

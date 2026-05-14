@@ -43,6 +43,7 @@ export default function ReportsPage() {
   const supabase = createClient();
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
+  const printableRef = useRef<HTMLDivElement>(null);
   const [trades, setTrades] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
   const [triggers, setTriggers] = useState<any[]>([]);
@@ -385,30 +386,41 @@ export default function ReportsPage() {
   }, [filteredTrades, triggers, walletRiskSettings]);
 
   const handleExportPDF = async () => {
-    if (!reportRef.current) return;
+    if (!printableRef.current) return;
     setExporting(true);
     
     try {
-      const dataUrl = await domtoimage.toPng(reportRef.current, {
-        bgcolor: '#050A15',
+      // Temporarily show the printable report
+      printableRef.current.style.display = 'block';
+      
+      const dataUrl = await domtoimage.toPng(printableRef.current, {
+        bgcolor: '#ffffff',
         quality: 1,
+        width: 1200,
+        height: printableRef.current.offsetHeight,
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left'
         }
       });
       
+      // Hide it back
+      printableRef.current.style.display = 'none';
+
       const img = new Image();
       img.src = dataUrl;
       await new Promise((resolve) => { img.onload = resolve; });
 
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'px',
-        format: [img.width, img.height]
+        format: 'a4'
       });
       
-      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+      const imgWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (img.height * imgWidth) / img.width;
+      
+      pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`relatorio-performance-${format(new Date(), 'dd-MM-yyyy')}.pdf`);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
@@ -929,6 +941,112 @@ export default function ReportsPage() {
 
         </div>
       )}
+
+      {/* Printable Report Template (Hidden) */}
+      <div 
+        ref={printableRef} 
+        style={{ display: 'none', width: '1200px', padding: '60px', backgroundColor: '#ffffff', color: '#000000', fontFamily: 'Inter, sans-serif' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #e2e8f0', paddingBottom: '30px', marginBottom: '40px' }}>
+          <div>
+            <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Relatório de Performance</h1>
+            <p style={{ fontSize: '14px', color: '#64748b', marginTop: '5px' }}>{format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Padrão de Candle</p>
+            <p style={{ fontSize: '12px', color: '#94a3b8' }}>Trading Intelligence Report</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '50px' }}>
+          <div style={{ padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Lucro Líquido</p>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: stats.netProfit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>
+              {formatCurrency(stats.netProfit, preferences.currency)}
+            </p>
+          </div>
+          <div style={{ padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Taxa de Acerto</p>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>{stats.winRate.toFixed(1)}%</p>
+          </div>
+          <div style={{ padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Operações</p>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>{stats.total}</p>
+          </div>
+          <div style={{ padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Payoff</p>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>{stats.payoff.toFixed(2)}</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '50px' }}>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>Performance por Ativo</h2>
+            <div style={{ spaceY: '10px' }}>
+              {stats.bestAssets.map((asset: any, i: number) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '14px', color: '#475569' }}>{asset[0]}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#10b981' }}>{formatCurrency(asset[1], preferences.currency)}</span>
+                </div>
+              ))}
+              {stats.worstAssets.map((asset: any, i: number) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '14px', color: '#475569' }}>{asset[0]}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#ef4444' }}>{formatCurrency(asset[1], preferences.currency)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>Análise Psicológica</h2>
+            <div style={{ spaceY: '10px' }}>
+              {stats.psychologyRanking.map((item: any, i: number) => (
+                <div key={i} style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontSize: '13px', color: '#475569' }}>{item.name}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold' }}>{item.percentage.toFixed(0)}%</span>
+                  </div>
+                  <div style={{ height: '6px', width: '100%', backgroundColor: '#f1f5f9', borderRadius: '3px' }}>
+                    <div style={{ height: '100%', width: `${item.percentage}%`, backgroundColor: '#8b5cf6', borderRadius: '3px' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: '30px', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' }}>Conclusões e Insights</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+            <div style={{ spaceY: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <span style={{ color: '#3b82f6' }}>•</span>
+                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Risco:</strong> {stats.insights.riskControl}</p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <span style={{ color: '#3b82f6' }}>•</span>
+                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Execução:</strong> {stats.insights.executionClean}</p>
+              </div>
+            </div>
+            <div style={{ spaceY: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <span style={{ color: '#8b5cf6' }}>•</span>
+                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Hábitos:</strong> {stats.insights.sleepInsight}</p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <span style={{ color: '#8b5cf6' }}>•</span>
+                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}><strong style={{ color: '#1e293b' }}>Emoção:</strong> {stats.insights.emotionInsight}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '50px', paddingTop: '20px', borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+          <p style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Gerado automaticamente pelo Sistema Padrão de Candle - Inteligência em Trading
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -990,6 +990,8 @@ export default function ReportsPage() {
           </div>
 
         </div>
+      )}
+
       <div 
         ref={printableRef}
         style={{ 

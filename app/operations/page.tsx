@@ -180,8 +180,8 @@ export default function OperationsPage() {
                           trade.trigger_id === filterTrigger || 
                           tradeTriggerName === filterTrigger;
     
-    // Lógica de período
-    const tradeDate = new Date(trade.created_at);
+    // Usa entry_time como data principal (data em que a operação foi feita), fallback para created_at
+    const tradeDate = new Date(trade.entry_time || trade.created_at);
     let matchesPeriod = true;
     
     if (filterStartDate) {
@@ -520,7 +520,7 @@ export default function OperationsPage() {
             </div>
             <div className="grid grid-cols-7">
               {days.map((day, idx) => {
-                const dayTrades = filteredTrades.filter(t => t.created_at && isSameDay(new Date(t.created_at), day));
+                const dayTrades = filteredTrades.filter(t => (t.entry_time || t.created_at) && isSameDay(new Date(t.entry_time || t.created_at), day));
                 const totalProfit = dayTrades.reduce((acc, t) => acc + (t.net_profit || 0), 0);
                 const isPositive = totalProfit > 0;
                 const isNegative = totalProfit < 0;

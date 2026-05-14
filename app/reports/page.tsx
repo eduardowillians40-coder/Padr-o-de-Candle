@@ -323,7 +323,7 @@ export default function ReportsPage() {
     }, {});
 
     const exitHours = wins.reduce((acc: Record<number, number>, t) => {
-      const exitDate = t.exit_time || t.created_at;
+      const exitDate = t.exit_time || t.entry_time || t.created_at;
       if (!exitDate) return acc;
       const hour = new Date(exitDate).getHours();
       acc[hour] = (acc[hour] || 0) + 1;
@@ -592,11 +592,11 @@ export default function ReportsPage() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-3 items-center bg-[#0D1425] p-4 rounded-2xl border border-slate-800/50">
+        <div className="flex flex-wrap gap-3 items-center bg-white dark:bg-[#0D1425] p-4 rounded-2xl border border-slate-200 dark:border-slate-800/50">
           <select
             value={filterWallet}
             onChange={(e) => setFilterWallet(e.target.value)}
-            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todas as Carteiras</option>
             {wallets.map(w => (
@@ -607,7 +607,7 @@ export default function ReportsPage() {
           <select
             value={filterMarket}
             onChange={(e) => setFilterMarket(e.target.value)}
-            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todos os Mercados</option>
             <option value="B3">B3</option>
@@ -618,7 +618,7 @@ export default function ReportsPage() {
           <select
             value={filterEmotion}
             onChange={(e) => setFilterEmotion(e.target.value)}
-            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todas as Emoções</option>
             <option value="CALMO">Calmo</option>
@@ -635,12 +635,12 @@ export default function ReportsPage() {
           <select
             value={filterSleep}
             onChange={(e) => setFilterSleep(e.target.value)}
-            className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+            className="bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">Todo o Sono</option>
-            <option value="< 6h">&lt; 6h de Sono</option>
+            <option value="&lt; 6h">&lt; 6h de Sono</option>
             <option value="6-8h">6-8h de Sono</option>
-            <option value="> 8h">&gt; 8h de Sono</option>
+            <option value="&gt; 8h">&gt; 8h de Sono</option>
             <option value="N/A">Sem Registro</option>
           </select>
 
@@ -648,7 +648,7 @@ export default function ReportsPage() {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
-              className="bg-[#0A0F1C] border border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+              className="bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
             >
               <option value="month">Este Mês</option>
               <option value="7d">Últimos 7 Dias</option>
@@ -658,21 +658,21 @@ export default function ReportsPage() {
             </select>
             
             {dateRange === 'custom' && (
-              <div className="flex items-center gap-2 bg-[#0A0F1C] border border-slate-800 rounded-xl px-3 py-1.5">
+              <div className="flex items-center gap-2 bg-slate-100 dark:bg-[#0A0F1C] border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-1.5">
                 <input 
                   type="date" 
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-transparent text-xs text-slate-300 focus:outline-none"
-                  style={{ colorScheme: 'dark' }}
+                  className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none"
+                  style={{ colorScheme: 'light dark' }}
                 />
                 <span className="text-slate-500 text-xs font-medium">até</span>
                 <input 
                   type="date" 
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-transparent text-xs text-slate-300 focus:outline-none"
-                  style={{ colorScheme: 'dark' }}
+                  className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none"
+                  style={{ colorScheme: 'light dark' }}
                 />
               </div>
             )}
@@ -787,7 +787,7 @@ export default function ReportsPage() {
                         <div key={idx} className="p-2 bg-red-500/5 border border-red-500/10 rounded-lg">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-bold text-white">{trade.asset}</span>
-                            <span className="text-[8px] text-slate-500">{new Date(trade.created_at).toLocaleDateString('pt-BR')}</span>
+                            <span className="text-[8px] text-slate-500">{new Date(trade.entry_time || trade.created_at).toLocaleDateString('pt-BR')}</span>
                           </div>
                           <div className="space-y-0.5">
                             {trade.violations.map((v: string, i: number) => (
@@ -1283,7 +1283,7 @@ export default function ReportsPage() {
                   const trig = triggers.find(tr => tr.id === trade.trigger_id);
                   return (
                     <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                      <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '11px' }}>{trade.entry_time ? format(new Date(trade.entry_time), 'dd/MM/yy') : '—'}</td>
+                      <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '11px' }}>{format(new Date(trade.entry_time || trade.created_at), 'dd/MM/yy')}</td>
                       <td style={{ padding: '10px 12px', fontWeight: '900', color: '#0f172a', fontSize: '11px' }}>{trade.asset}</td>
                       <td style={{ padding: '10px 12px', color: trade.type === 'BUY' ? '#10b981' : '#ef4444', fontWeight: '800', fontSize: '11px', textAlign: 'center' }}>{trade.type}</td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
@@ -1297,7 +1297,7 @@ export default function ReportsPage() {
               </tbody>
             </table>
             {filteredTrades.length > 20 && (
-              <div style={{ padding: '6px', textAlign: 'center', fontSize: '9px', color: '#94a3b8', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>+ {filteredTrades.length - 20} operações não exibidas</div>
+              <div style={{ padding: '10px', textAlign: 'center', fontSize: '9px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '0 0 10px 10px' }}>+ {filteredTrades.length - 20} operações não exibidas no PDF</div>
             )}
           </div>
         )}

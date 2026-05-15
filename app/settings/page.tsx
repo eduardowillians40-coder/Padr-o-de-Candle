@@ -58,6 +58,7 @@ export default function SettingsPage() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [testingAI, setTestingAI] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
@@ -174,6 +175,42 @@ export default function SettingsPage() {
       alert('Erro ao salvar configurações: ' + error.message);
     }
     setSaving(false);
+  };
+
+  const handleTestAI = async () => {
+    setTestingAI(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          stats: {
+            netProfit: 100,
+            winRate: 50,
+            total: 2,
+            wins: 1,
+            losses: 1,
+            profitFactor: 1.5,
+            disciplinePercentage: 90,
+            bestAssets: ['EURUSD'],
+            bestEntryHours: ['10:00'],
+            triggerStats: {}
+          },
+          userId: user.id 
+        })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      alert('Conexão com IA realizada com sucesso!');
+    } catch (error: any) {
+      alert('Falha na conexão: ' + error.message);
+    } finally {
+      setTestingAI(false);
+    }
   };
 
   const handleAddTrigger = async () => {
@@ -574,7 +611,20 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end gap-3 pt-4">
+                  <button 
+                    onClick={handleTestAI}
+                    disabled={testingAI}
+                    className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 border border-slate-700 shadow-lg"
+                  >
+                    {testingAI ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Activity className="w-4 h-4" />
+                    )}
+                    {testingAI ? 'TESTANDO...' : 'TESTAR CONEXÃO'}
+                  </button>
+
                   <button 
                     onClick={handleSaveProfile}
                     disabled={saving}

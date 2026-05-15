@@ -738,17 +738,28 @@ export default function ReportsPage() {
             </button>
           </div>
           
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-600 rounded-lg shadow-lg shadow-purple-600/20">
-              <Brain className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-600 rounded-lg shadow-lg shadow-purple-600/20">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">DIAGNÓSTICO DA INTELIGÊNCIA ARTIFICIAL</h3>
+                <p className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Análise de Performance TACTICAL EYE</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">DIAGNÓSTICO DA INTELIGÊNCIA ARTIFICIAL</h3>
-              <p className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Análise de Performance Mentoria DOE</p>
-            </div>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(aiInsight || '');
+                alert('Análise copiada para a área de transferência!');
+              }}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-slate-400 hover:text-white flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-white/5"
+            >
+              Copiar Análise
+            </button>
           </div>
 
-          <div className="prose prose-sm prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-medium leading-relaxed">
+          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-medium leading-relaxed bg-[#050A15]/40 p-6 rounded-2xl border border-white/5 shadow-inner">
             {aiInsight}
           </div>
         </motion.div>

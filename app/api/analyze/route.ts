@@ -18,11 +18,11 @@ export async function POST(req: Request) {
     let apiKey = '';
 
     if (provider === 'gemini') {
-      apiKey = profile?.gemini_api_key || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+      apiKey = profile?.gemini_api_key || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
     } else if (provider === 'claude') {
-      apiKey = profile?.claude_api_key || '';
+      apiKey = profile?.claude_api_key || process.env.CLAUDE_API_KEY || '';
     } else if (provider === 'openai') {
-      apiKey = profile?.openai_api_key || '';
+      apiKey = profile?.openai_api_key || process.env.OPENAI_API_KEY || '';
     }
 
     if (!apiKey) {

@@ -36,14 +36,14 @@ export async function POST(req: Request) {
       Foque em: Disciplina, Gerenciamento de Risco, Melhores Horários e Padrões de Sucesso/Falha.
 
       ESTATÍSTICAS DO PERÍODO:
-      - Saldo Líquido: ${stats.netProfit}
-      - Win Rate: ${stats.winRate.toFixed(2)}%
-      - Total de Operações: ${stats.total} (Vencidas: ${stats.wins}, Perdidas: ${stats.losses})
-      - Fator de Lucro: ${stats.profitFactor.toFixed(2)}
-      - Aderência ao Plano: ${stats.disciplinePercentage.toFixed(2)}%
-      - Melhores Ativos: ${JSON.stringify(stats.bestAssets)}
-      - Horários Mais Eficientes: ${JSON.stringify(stats.bestEntryHours)}
-      - Gatilhos Mais Lucrativos: ${JSON.stringify(Object.entries(stats.triggerStats).sort((a:any, b:any) => b[1].profit - a[1].profit).slice(0, 3))}
+      - Saldo Líquido: ${stats.netProfit || 0}
+      - Win Rate: ${(stats.winRate || 0).toFixed(2)}%
+      - Total de Operações: ${stats.total || 0} (Vencidas: ${stats.wins || 0}, Perdidas: ${stats.losses || 0})
+      - Fator de Lucro (Payoff): ${(stats.payoff || stats.profitFactor || 0).toFixed(2)}
+      - Aderência ao Plano: ${(stats.disciplinePercentage || 0).toFixed(2)}%
+      - Melhores Ativos: ${JSON.stringify(stats.bestAssets || [])}
+      - Horários Mais Eficientes: ${JSON.stringify(stats.bestEntryHours || [])}
+      - Gatilhos Mais Lucrativos: ${JSON.stringify((stats.triggerStats || []).slice(0, 3))}
 
       FORMATO DA RESPOSTA:
       Use Markdown. Seja encorajador mas crítico. Use tópicos.

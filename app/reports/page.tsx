@@ -594,6 +594,10 @@ export default function ReportsPage() {
               <h1 className="text-2xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
                 <FileText className="w-6 h-6 text-blue-500" />
                 Relatório de Performance
+              </h1>
+              <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
+                Análise detalhada dos seus resultados operacionais
+              </p>
             </div>
           </div>
 

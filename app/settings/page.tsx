@@ -15,7 +15,9 @@ import {
   LogOut,
   Zap,
   CheckCircle2,
-  Coins
+  Coins,
+  Brain,
+  Cpu
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
@@ -41,7 +43,11 @@ export default function SettingsPage() {
     currency: 'BRL',
     theme: 'dark',
     email: '',
-    avatar_url: ''
+    avatar_url: '',
+    ai_provider: 'gemini',
+    gemini_api_key: '',
+    claude_api_key: '',
+    openai_api_key: ''
   });
   const [triggers, setTriggers] = useState<any[]>([]);
   const [newTrigger, setNewTrigger] = useState('');
@@ -75,7 +81,11 @@ export default function SettingsPage() {
           currency: profileData.currency || 'BRL',
           theme: profileData.theme || 'dark',
           email: user.email || '',
-          avatar_url: profileData.avatar_url || ''
+          avatar_url: profileData.avatar_url || '',
+          ai_provider: profileData.ai_provider || 'gemini',
+          gemini_api_key: profileData.gemini_api_key || '',
+          claude_api_key: profileData.claude_api_key || '',
+          openai_api_key: profileData.openai_api_key || ''
         });
       }
 
@@ -143,6 +153,10 @@ export default function SettingsPage() {
         phone: profile.phone,
         currency: profile.currency,
         theme: profile.theme,
+        ai_provider: profile.ai_provider,
+        gemini_api_key: profile.gemini_api_key,
+        claude_api_key: profile.claude_api_key,
+        openai_api_key: profile.openai_api_key,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
@@ -237,6 +251,7 @@ export default function SettingsPage() {
           {[
             { id: 'profile', label: 'MEU PERFIL', icon: User },
             { id: 'triggers', label: 'GATILHOS', icon: Zap },
+            { id: 'ai', label: 'IA CONFIG', icon: Brain },
             { id: 'security', label: 'SEGURANÇA', icon: Shield },
           ].map((item) => (
             <button
@@ -477,6 +492,97 @@ export default function SettingsPage() {
                       <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">{trigger}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'ai' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-[#0D1425] border border-slate-800 rounded-2xl p-8 space-y-8">
+                <div className="flex items-center gap-3">
+                  <Brain className="w-5 h-5 text-purple-500" />
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">INTELIGÊNCIA ARTIFICIAL</h3>
+                </div>
+
+                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <p className="text-xs text-purple-200 leading-relaxed">
+                    Personalize sua experiência de análise. Você pode usar sua própria chave de API para garantir maior velocidade e autonomia nos insights gerados pela IA. Se deixado em branco, o sistema tentará usar a chave global configurada.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Provedor de IA Ativo</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { id: 'gemini', label: 'Google Gemini', icon: Cpu },
+                        { id: 'claude', label: 'Anthropic Claude', icon: Cpu },
+                        { id: 'openai', label: 'OpenAI GPT', icon: Cpu }
+                      ].map((prov) => (
+                        <button
+                          key={prov.id}
+                          onClick={() => setProfile({...profile, ai_provider: prov.id})}
+                          className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${profile.ai_provider === prov.id ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg shadow-purple-600/10' : 'bg-[#050A15] border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                        >
+                          <prov.icon className={`w-4 h-4 ${profile.ai_provider === prov.id ? 'text-purple-400' : 'text-slate-600'}`} />
+                          <span className="text-[10px] font-bold uppercase tracking-tight">{prov.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    {profile.ai_provider === 'gemini' && (
+                      <div className="space-y-2 animate-in fade-in duration-300">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gemini API Key</label>
+                        <input 
+                          type="password" 
+                          placeholder="Cole sua chave do Google Gemini aqui..."
+                          value={profile.gemini_api_key}
+                          onChange={(e) => setProfile({...profile, gemini_api_key: e.target.value})}
+                          className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        />
+                      </div>
+                    )}
+
+                    {profile.ai_provider === 'claude' && (
+                      <div className="space-y-2 animate-in fade-in duration-300">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Claude API Key</label>
+                        <input 
+                          type="password" 
+                          placeholder="Cole sua chave da Anthropic Claude aqui..."
+                          value={profile.claude_api_key}
+                          onChange={(e) => setProfile({...profile, claude_api_key: e.target.value})}
+                          className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        />
+                      </div>
+                    )}
+
+                    {profile.ai_provider === 'openai' && (
+                      <div className="space-y-2 animate-in fade-in duration-300">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">OpenAI API Key</label>
+                        <input 
+                          type="password" 
+                          placeholder="Cole sua chave da OpenAI aqui..."
+                          value={profile.openai_api_key}
+                          onChange={(e) => setProfile({...profile, openai_api_key: e.target.value})}
+                          className="w-full bg-[#050A15] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button 
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                    className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-600/20"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'SALVANDO...' : 'SALVAR CONFIGURAÇÕES DE IA'}
+                  </button>
                 </div>
               </div>
             </div>

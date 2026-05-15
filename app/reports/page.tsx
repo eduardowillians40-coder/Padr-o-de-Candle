@@ -18,7 +18,9 @@ import {
   ChevronDown,
   ArrowLeft,
   Download,
-  X
+  X,
+  Sparkles,
+  Cpu
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
@@ -80,6 +82,8 @@ export default function ReportsPage() {
   const reportRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const printableRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -98,6 +102,33 @@ export default function ReportsPage() {
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | 'month' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+
+  const handleAIAnalysis = async () => {
+    if (stats.total === 0) return;
+    setAnalyzing(true);
+    setAiInsight(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const response = await fetch('/api/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stats, userId: user.id })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      
+      setAiInsight(data.text);
+    } catch (error: any) {
+      console.error('AI Analysis Error:', error);
+      alert('Erro na análise de IA: ' + error.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const handlePreviewPDF = async () => {
     if (!printableRef.current) return;
@@ -563,33 +594,44 @@ export default function ReportsPage() {
               <h1 className="text-2xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
                 <FileText className="w-6 h-6 text-blue-500" />
                 Relatório de Performance
-              </h1>
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">
-                Análise detalhada dos seus resultados operacionais
-              </p>
             </div>
           </div>
 
-          <button
-            onClick={handlePreviewPDF}
-            disabled={stats.total === 0}
-            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
-          >
-            <Download className="w-4 h-4" />
-            Visualizar PDF
-          </button>
-          <button
-            onClick={handleExportPDF}
-            disabled={!pdfReady}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20"
-          >
-            {exporting ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAIAnalysis}
+              disabled={stats.total === 0 || analyzing}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-purple-600/20"
+            >
+              {analyzing ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {analyzing ? 'Analisando...' : 'Análise com IA'}
+            </button>
+
+            <button
+              onClick={handlePreviewPDF}
+              disabled={stats.total === 0}
+              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 shadow-sm"
+            >
               <Download className="w-4 h-4" />
-            )}
-            {exporting ? 'Baixando...' : 'Baixar PDF'}
-          </button>
+              Visualizar PDF
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={!pdfReady}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20"
+            >
+              {exporting ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {exporting ? 'Baixando...' : 'Baixar PDF'}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center bg-white dark:bg-[#0D1425] p-4 rounded-2xl border border-slate-200 dark:border-slate-800/50">
@@ -680,6 +722,34 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {aiInsight && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-6 bg-gradient-to-br from-purple-600/10 via-purple-500/5 to-transparent border border-purple-500/20 rounded-3xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-4">
+            <button onClick={() => setAiInsight(null)} className="text-slate-500 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-600 rounded-lg shadow-lg shadow-purple-600/20">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">DIAGNÓSTICO DA INTELIGÊNCIA ARTIFICIAL</h3>
+              <p className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Análise de Performance Mentoria DOE</p>
+            </div>
+          </div>
+
+          <div className="prose prose-sm prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-medium leading-relaxed">
+            {aiInsight}
+          </div>
+        </motion.div>
+      )}
+
       {stats.total === 0 ? (
         <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-12 text-center">
           <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
@@ -687,27 +757,27 @@ export default function ReportsPage() {
           <p className="text-slate-500 text-sm">Não há operações registradas para os filtros selecionados.</p>
         </div>
       ) : (
-        <div ref={reportRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 bg-[#050A15] rounded-3xl">
+        <div ref={reportRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 bg-slate-50 dark:bg-[#050A15] rounded-3xl transition-colors duration-300">
           
           {/* Coluna 1: Resultado Geral */}
           <div className="space-y-6">
-            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-[#0D1425] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
               
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                 <TrendingUp className="w-4 h-4 text-blue-500" />
                 Resultado Geral
               </h2>
 
               <div className="space-y-4">
-                <div className="pb-4 border-b border-slate-800/50">
+                <div className="pb-4 border-b border-slate-100 dark:border-slate-800/50">
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Saldo Líquido</p>
                   <p className={`text-3xl font-bold font-display ${stats.netProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                     {formatCurrency(stats.netProfit, preferences.currency)}
                   </p>
                 </div>
 
-                <ul className="space-y-3 text-sm">
+                <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                   <li className="flex justify-between items-center">
                     <span className="text-slate-400">Total de operações:</span>
                     <span className="font-bold text-white">{stats.total}</span>
@@ -742,15 +812,15 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+            <div className="bg-white dark:bg-[#0D1425] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                 <Brain className="w-4 h-4 text-purple-500" />
                 Psicologia & Disciplina
               </h2>
               
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Ranking de Sentimentos:</h3>
+                  <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Ranking de Sentimentos:</h3>
                   <div className="space-y-2">
                     {stats.psychologyRanking.map((item: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center text-xs">
@@ -758,15 +828,15 @@ export default function ReportsPage() {
                           <div className="w-1 h-1 rounded-full bg-purple-500" />
                           {item.name}
                         </span>
-                        <span className="font-bold text-white">{item.percentage.toFixed(0)}%</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{item.percentage.toFixed(0)}%</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800/50">
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800/50">
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disciplina do Plano:</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Disciplina do Plano:</h3>
                     <span className={`text-sm font-bold ${stats.disciplinePercentage >= 90 ? 'text-emerald-500' : stats.disciplinePercentage >= 70 ? 'text-yellow-500' : 'text-red-500'}`}>
                       {stats.disciplinePercentage.toFixed(0)}%
                     </span>
@@ -780,13 +850,13 @@ export default function ReportsPage() {
                 </div>
 
                 {stats.outOfPlanTrades.length > 0 && (
-                  <div className="pt-4 border-t border-slate-800/50">
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800/50">
                     <h3 className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-3">Fora do Plano ({stats.outOfPlanTrades.length}):</h3>
                     <div className="max-h-[150px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                       {stats.outOfPlanTrades.map((trade: any, idx: number) => (
                         <div key={idx} className="p-2 bg-red-500/5 border border-red-500/10 rounded-lg">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-bold text-white">{trade.asset}</span>
+                            <span className="text-[10px] font-bold text-slate-900 dark:text-white">{trade.asset}</span>
                             <span className="text-[8px] text-slate-500">{new Date(trade.entry_time || trade.created_at).toLocaleDateString('pt-BR')}</span>
                           </div>
                           <div className="space-y-0.5">
@@ -805,7 +875,7 @@ export default function ReportsPage() {
 
           {/* Coluna 2: Sessões e Ativos */}
           <div className="space-y-6">
-            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
+            <div className="bg-white dark:bg-[#0D1425] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
               <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                 <Clock className="w-4 h-4 text-amber-500" />
                 Sessões e Horários
@@ -814,11 +884,11 @@ export default function ReportsPage() {
               <div className="space-y-6">
                 {stats.sortedSessions.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Sessões que mais entregaram:</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Sessões que mais entregaram:</h3>
                     <ul className="space-y-2">
                       {stats.sortedSessions.map((session: [string, { profit: number; count: number }], idx: number) => (
                         <li key={idx} className="flex justify-between items-center text-sm">
-                          <span className="text-slate-300 flex items-center gap-2">
+                          <span className="text-slate-500 dark:text-slate-300 flex items-center gap-2">
                             <div className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`} />
                             {session[0]}
                           </span>
@@ -832,7 +902,7 @@ export default function ReportsPage() {
                 )}
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Horários mais eficientes de entrada:</h3>
+                  <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Horários mais eficientes de entrada:</h3>
                   <div className="flex flex-wrap gap-2">
                     {stats.bestEntryHours.length > 0 ? stats.bestEntryHours.map((h, i) => (
                       <span key={i} className="px-3 py-1 bg-amber-500/10 text-amber-500 font-bold text-xs rounded-lg border border-amber-500/20">{h}</span>
@@ -841,7 +911,7 @@ export default function ReportsPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Horários de saída mais eficientes:</h3>
+                  <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Horários de saída mais eficientes:</h3>
                   <div className="flex flex-wrap gap-2">
                     {stats.bestExitHours.length > 0 ? stats.bestExitHours.map((h, i) => (
                       <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-500 font-bold text-xs rounded-lg border border-blue-500/20">{h}</span>
@@ -851,8 +921,8 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+            <div className="bg-white dark:bg-[#0D1425] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                 <Target className="w-4 h-4 text-emerald-500" />
                 Performance por Ativo
               </h2>
@@ -864,8 +934,8 @@ export default function ReportsPage() {
                   </h3>
                   <div className="space-y-2">
                     {stats.bestAssets.length > 0 ? stats.bestAssets.map((asset: [string, number], idx: number) => (
-                      <div key={idx} className="flex justify-between items-center p-2 bg-[#050A15] rounded-lg border border-slate-800/50">
-                        <span className="text-sm font-bold text-white">{asset[0]}</span>
+                      <div key={idx} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-[#050A15] rounded-lg border border-slate-100 dark:border-slate-800/50">
+                        <span className="text-sm font-bold text-slate-700 dark:text-white">{asset[0]}</span>
                         <span className="text-sm font-bold text-emerald-500">{formatCurrency(asset[1], preferences.currency)}</span>
                       </div>
                     )) : <span className="text-sm text-slate-500">Sem dados</span>}
@@ -878,8 +948,8 @@ export default function ReportsPage() {
                   </h3>
                   <div className="space-y-2">
                     {stats.worstAssets.length > 0 ? stats.worstAssets.map((asset: [string, number], idx: number) => (
-                      <div key={idx} className="flex justify-between items-center p-2 bg-[#050A15] rounded-lg border border-slate-800/50">
-                        <span className="text-sm font-bold text-white">{asset[0]}</span>
+                      <div key={idx} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-[#050A15] rounded-lg border border-slate-100 dark:border-slate-800/50">
+                        <span className="text-sm font-bold text-slate-700 dark:text-white">{asset[0]}</span>
                         <span className="text-sm font-bold text-red-500">{formatCurrency(asset[1], preferences.currency)}</span>
                       </div>
                     )) : <span className="text-sm text-slate-500">Sem perdas registradas</span>}
@@ -896,8 +966,8 @@ export default function ReportsPage() {
 
           {/* Coluna 3: Gatilhos e Conclusão */}
           <div className="space-y-6">
-            <div className="bg-[#0D1425] border border-slate-800 rounded-3xl p-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+            <div className="bg-white dark:bg-[#0D1425] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                 <Filter className="w-4 h-4 text-indigo-500" />
                 Análise de Gatilhos
               </h2>
@@ -906,9 +976,9 @@ export default function ReportsPage() {
                 {Object.entries(stats.triggerStats).length > 0 ? Object.entries(stats.triggerStats)
                   .sort((a: [string, { profit: number }], b: [string, { profit: number }]) => b[1].profit - a[1].profit)
                   .map(([trigger, data]: [string, { profit: number; win: number; loss: number }], idx: number) => (
-                  <div key={idx} className="p-3 bg-[#050A15] rounded-xl border border-slate-800/50">
+                  <div key={idx} className="p-3 bg-slate-50 dark:bg-[#050A15] rounded-xl border border-slate-100 dark:border-slate-800/50">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">{trigger}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-white uppercase tracking-wider">{trigger}</span>
                       <span className={`text-xs font-bold ${data.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                         {formatCurrency(data.profit, preferences.currency)}
                       </span>
@@ -925,17 +995,17 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-[#0D1425] to-[#050A15] border border-slate-800 rounded-3xl p-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-4">
+            <div className="bg-white dark:bg-gradient-to-br dark:from-[#0D1425] dark:to-[#050A15] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-4">
                 <Brain className="w-4 h-4 text-pink-500" />
                 Conclusão
               </h2>
               
-              <p className="text-sm text-slate-300 mb-4">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
                 O período analisado foi marcado por:
               </p>
               
-              <ul className="space-y-3 text-sm text-slate-400">
+              <ul className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
                 <li className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full ${stats.winRate >= 60 ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
                   {stats.winRate >= 60 ? 'Boa consistência (Win Rate > 60%)' : 'Consistência em desenvolvimento'}

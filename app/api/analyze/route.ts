@@ -53,11 +53,24 @@ export async function POST(req: Request) {
     // 3. Call AI Provider
     if (provider === 'gemini') {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      return NextResponse.json({ text });
+      try {
+        // Try the latest flash model first
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        return NextResponse.json({ text });
+      } catch (geminiError: any) {
+        // Fallback to stable gemini-pro if flash is not available
+        if (geminiError.message?.includes('404') || geminiError.message?.includes('not found')) {
+          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+          const result = await fallbackModel.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          return NextResponse.json({ text });
+        }
+        throw geminiError;
+      }
     }
 
     // Placeholder for other providers (implementing logic if keys exist)

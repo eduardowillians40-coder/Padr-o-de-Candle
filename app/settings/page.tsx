@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Coins,
   Brain,
-  Cpu
+  Cpu,
+  Activity
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';

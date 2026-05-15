@@ -52,24 +52,33 @@ export async function POST(req: Request) {
 
     // 3. Call AI Provider
     if (provider === 'gemini') {
-      const genAI = new GoogleGenerativeAI(apiKey);
       try {
-        // Try the latest flash model first
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: prompt }]
+              }]
+            })
+          }
+        );
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message || 'Erro na API do Google Gemini');
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Não foi possível gerar a análise.';
         return NextResponse.json({ text });
       } catch (geminiError: any) {
-        // Fallback to stable gemini-pro if flash is not available
-        if (geminiError.message?.includes('404') || geminiError.message?.includes('not found')) {
-          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-          const result = await fallbackModel.generateContent(prompt);
-          const response = await result.response;
-          const text = response.text();
-          return NextResponse.json({ text });
-        }
-        throw geminiError;
+        console.error('Gemini Fetch Error:', geminiError);
+        return NextResponse.json({ error: `Erro na comunicação com a IA: ${geminiError.message}` }, { status: 500 });
       }
     }
 
